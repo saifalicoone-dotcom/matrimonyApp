@@ -1,0 +1,240 @@
+// Prisma Schema for Matrimonial Web Application
+// Based on Product Requirements Document
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  PREMIUM
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MaritalStatus {
+  NEVER_MARRIED
+  DIVORCED
+  WIDOWED
+  ANNULLED
+}
+
+enum Diet {
+  VEGETARIAN
+  VEGAN
+  NON_VEGETARIAN
+  JAIN
+  EGGETARIAN
+}
+
+// User Model - Authentication and Basic Info
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  phone           String?  @unique
+  passwordHash    String
+  role            Role     @default(USER)
+  isEmailVerified Boolean  @default(false)
+  isPhoneVerified Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lastActive      DateTime @default(now())
+
+  // Relations
+  profile           Profile?
+  photos            Photo[]
+  subscriptions     Subscription[]
+  sentInterests     Interest[]     @relation("SentInterests")
+  receivedInterests Interest[]     @relation("ReceivedInterests")
+  sentMessages      Message[]      @relation("SentMessages")
+  receivedMessages  Message[]      @relation("ReceivedMessages")
+  shortlists        Shortlist[]    @relation("UserShortlists")
+  shortlistedBy     Shortlist[]    @relation("ShortlistedUsers")
+  blockedUsers      BlockList[]    @relation("BlockerUsers")
+  blockedBy         BlockList[]    @relation("BlockedUsers")
+  notifications     Notification[]
+
+  @@map("users")
+}
+
+// Profile Model - Comprehensive User Details
+model Profile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Personal Information
+  firstName     String
+  lastName      String?
+  dateOfBirth   DateTime
+  age           Int
+  gender        Gender
+  height        Float? // in cm
+  maritalStatus MaritalStatus @default(NEVER_MARRIED)
+
+  // Contact (stored but visibility controlled)
+  email       String
+  phone       String?
+  withContact Boolean @default(false) // Allow contact viewing
+
+  // Education & Career
+  education  String?
+  occupation String?
+  income     String? // e.g., "5-10 Lakhs", "10-15 Lakhs"
+
+  // Location
+  country String?
+  state   String?
+  city    String?
+  address String?
+
+  // Cultural Background
+  religion     String?
+  caste        String?
+  subCaste     String?
+  community    String?
+  motherTongue String?
+
+  // Family Background
+  familyType       String? // "Nuclear", "Joint"
+  fatherOccupation String?
+  motherOccupation String?
+  siblings         String? // "1 Brother", "2 Sisters", etc.
+
+  // Lifestyle
+  diet     Diet?
+  smoking  Boolean @default(false)
+  drinking Boolean @default(false)
+
+  // About & Preferences
+  aboutMe            String? @db.Text
+  partnerPreferences String? @db.Text
+
+  // Verification
+  isVerified           Boolean @default(false)
+  verificationDocument String? // URL to verification document
+
+  // Visibility Settings
+  profileVisible Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([religion, caste])
+  @@index([country, state, city])
+  @@map("profiles")
+}
+
+// Photo Model - Profile Photos
+model Photo {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url       String // S3 URL or cloud storage URL
+  isPrimary Boolean  @default(false)
+  order     Int      @default(0) // For ordering photos
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("photos")
+}
+
+// Interest Model - Users expressing interest in each other
+model Interest {
+  id         String   @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  fromUser   User     @relation("SentInterests", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser     User     @relation("ReceivedInterests", fields: [toUserId], references: [id], onDelete: Cascade)
+  status     String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([fromUserId, toUserId])
+  @@map("interests")
+}
+
+// Shortlist Model - Users marking profiles as favorites
+model Shortlist {
+  id                String   @id @default(uuid())
+  userId            String
+  shortlistedUserId String
+  user              User     @relation("UserShortlists", fields: [userId], references: [id], onDelete: Cascade)
+  shortlistedUser   User     @relation("ShortlistedUsers", fields: [shortlistedUserId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  @@unique([userId, shortlistedUserId])
+  @@map("shortlists")
+}
+
+// Message Model - Chat Messages
+model Message {
+  id         String   @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  fromUser   User     @relation("SentMessages", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser     User     @relation("ReceivedMessages", fields: [toUserId], references: [id], onDelete: Cascade)
+  content    String   @db.Text
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@map("messages")
+}
+
+// Subscription Model - Premium Plans
+model Subscription {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planType  String // "PREMIUM", "VIP"
+  startDate DateTime @default(now())
+  endDate   DateTime
+  isActive  Boolean  @default(true)
+  paymentId String? // Payment gateway transaction ID
+  amount    Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subscriptions")
+}
+
+// BlockList Model - Blocked Users
+model BlockList {
+  id            String   @id @default(uuid())
+  userId        String // User who blocked
+  blockedUserId String // User who is blocked
+  user          User     @relation("BlockerUsers", fields: [userId], references: [id], onDelete: Cascade)
+  blockedUser   User     @relation("BlockedUsers", fields: [blockedUserId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+
+  @@unique([userId, blockedUserId])
+  @@map("blocklists")
+}
+
+// Notification Model - User Notifications
+model Notification {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          String // "message", "interest", "match", "profile_view"
+  title         String
+  message       String   @db.Text
+  isRead        Boolean  @default(false)
+  relatedUserId String? // ID of user related to notification (e.g., who sent message)
+  metadata      Json? // Additional data as JSON
+  createdAt     DateTime @default(now())
+
+  @@map("notifications")
+}
