@@ -23,7 +23,13 @@ router.post(
  * @desc    Get my shortlisted profiles
  * @access  Protected
  */
-router.get("/", authenticate, shortlistController.getMyShortlist);
+router.get(
+  "/",
+  authenticate,
+  paginationValidation,
+  validateRequest,
+  shortlistController.getMyShortlist
+);
 
 /**
  * @route   DELETE /api/shortlist/:shortlistedUserId

@@ -23,7 +23,13 @@ router.post(
  * @desc    Get blocked users list
  * @access  Protected
  */
-router.get("/", authenticate, blockController.getBlockedUsers);
+router.get(
+  "/",
+  authenticate,
+  paginationValidation,
+  validateRequest,
+  blockController.getBlockedUsers
+);
 
 /**
  * @route   DELETE /api/users/me/blocks/:blockedUserId

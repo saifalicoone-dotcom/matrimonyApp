@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const notificationController = require("../controllers/notificationController");
 const { authenticate } = require("../middleware/auth");
+const { uuidParamValidation, paginationValidation } = require("../middleware/validationSchemas");
+const validateRequest = require("../middleware/validateRequest");
 
 /**
  * @route   GET /api/users/me/notifications

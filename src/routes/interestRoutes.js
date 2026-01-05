@@ -2,7 +2,11 @@ const express = require("express");
 const router = express.Router();
 const interestController = require("../controllers/interestController");
 const { authenticate } = require("../middleware/auth");
-const { sendInterestValidation } = require("../middleware/validationSchemas");
+const {
+  sendInterestValidation,
+  uuidParamValidation,
+  paginationValidation,
+} = require("../middleware/validationSchemas");
 const validateRequest = require("../middleware/validateRequest");
 
 /**

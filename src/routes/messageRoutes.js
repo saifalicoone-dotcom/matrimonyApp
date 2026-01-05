@@ -23,7 +23,13 @@ router.post(
  * @desc    Get all conversations
  * @access  Protected
  */
-router.get("/conversations", authenticate, messageController.getConversations);
+router.get(
+  "/conversations",
+  authenticate,
+  paginationValidation,
+  validateRequest,
+  messageController.getConversations
+);
 
 /**
  * @route   GET /api/messages/:userId
