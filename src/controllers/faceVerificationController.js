@@ -104,7 +104,8 @@ const storeFaceEncoding = async (req, res, next) => {
 
     res.json({
       status: "success",
-      message: "Face encoding stored successfully. Please verify your face to complete verification.",
+      message:
+        "Face encoding stored successfully. Please verify your face to complete verification.",
       data: {
         faceEncodingStored: true,
         faceVerified: profile.faceVerified,
@@ -162,7 +163,8 @@ const verifyFace = async (req, res, next) => {
     if (!profile.faceEncoding) {
       return res.status(400).json({
         status: "error",
-        message: "No face encoding stored. Please upload a photo and store face encoding first.",
+        message:
+          "No face encoding stored. Please upload a photo and store face encoding first.",
         error: "Face encoding not found.",
       });
     }
@@ -175,7 +177,10 @@ const verifyFace = async (req, res, next) => {
     // Lower distance = more similar faces
     const threshold = 0.6;
     const isMatch = distance < threshold;
-    const similarity = Math.max(0, Math.min(100, (1 - distance / threshold) * 100));
+    const similarity = Math.max(
+      0,
+      Math.min(100, (1 - distance / threshold) * 100)
+    );
 
     if (isMatch) {
       // Update profile as verified
@@ -208,7 +213,8 @@ const verifyFace = async (req, res, next) => {
           distance: distance.toFixed(4),
           similarity: similarity.toFixed(2),
           threshold: threshold,
-          suggestion: "Please ensure good lighting and face the camera directly.",
+          suggestion:
+            "Please ensure good lighting and face the camera directly.",
         },
       });
     }
@@ -314,4 +320,3 @@ module.exports = {
   resetFaceVerification,
   calculateEuclideanDistance, // Export for testing
 };
-

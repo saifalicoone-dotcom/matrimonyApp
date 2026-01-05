@@ -2,27 +2,51 @@ const express = require("express");
 const router = express.Router();
 const blockController = require("../controllers/blockController");
 const { authenticate } = require("../middleware/auth");
+const {
+  blockUserValidation,
+  uuidParamValidation,
+  paginationValidation,
+} = require("../middleware/validationSchemas");
+const validateRequest = require("../middleware/validateRequest");
 
 /**
  * @route   POST /api/users/me/blocks
  * @desc    Block a user
  * @access  Protected
  */
-router.post("/", authenticate, blockController.blockUser);
+router.post(
+  "/",
+  authenticate,
+  blockUserValidation,
+  validateRequest,
+  blockController.blockUser
+);
 
 /**
  * @route   GET /api/users/me/blocks
  * @desc    Get blocked users list
  * @access  Protected
  */
-router.get("/", authenticate, blockController.getBlockedUsers);
+router.get(
+  "/",
+  authenticate,
+  paginationValidation,
+  validateRequest,
+  blockController.getBlockedUsers
+);
 
 /**
  * @route   DELETE /api/users/me/blocks/:blockedUserId
  * @desc    Unblock a user
  * @access  Protected
  */
-router.delete("/:blockedUserId", authenticate, blockController.unblockUser);
+router.delete(
+  "/:blockedUserId",
+  authenticate,
+  uuidParamValidation("blockedUserId"),
+  validateRequest,
+  blockController.unblockUser
+);
 
 module.exports = router;
 

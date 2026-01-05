@@ -2,13 +2,21 @@ const express = require("express");
 const router = express.Router();
 const notificationController = require("../controllers/notificationController");
 const { authenticate } = require("../middleware/auth");
+const { uuidParamValidation, paginationValidation } = require("../middleware/validationSchemas");
+const validateRequest = require("../middleware/validateRequest");
 
 /**
  * @route   GET /api/users/me/notifications
  * @desc    Get notifications
  * @access  Protected
  */
-router.get("/", authenticate, notificationController.getNotifications);
+router.get(
+  "/",
+  authenticate,
+  paginationValidation,
+  validateRequest,
+  notificationController.getNotifications
+);
 
 /**
  * @route   GET /api/users/me/notifications/unread-count
@@ -29,6 +37,8 @@ router.get(
 router.patch(
   "/:notificationId/read",
   authenticate,
+  uuidParamValidation("notificationId"),
+  validateRequest,
   notificationController.markAsRead
 );
 
@@ -51,6 +61,8 @@ router.patch(
 router.delete(
   "/:notificationId",
   authenticate,
+  uuidParamValidation("notificationId"),
+  validateRequest,
   notificationController.deleteNotification
 );
 

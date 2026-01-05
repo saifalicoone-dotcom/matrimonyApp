@@ -3,6 +3,12 @@ const router = express.Router();
 const photoController = require('../controllers/photoController');
 const { authenticate } = require('../middleware/auth');
 const { uploadSinglePhoto, handleUploadError } = require('../middleware/upload');
+const {
+  photoPrivacyValidation,
+  uuidParamValidation,
+  paginationValidation,
+} = require('../middleware/validationSchemas');
+const validateRequest = require('../middleware/validateRequest');
 
 /**
  * @route   POST /api/users/me/photos
@@ -23,14 +29,26 @@ router.get('/', authenticate, photoController.getMyPhotos);
  * @desc    Delete a photo
  * @access  Protected
  */
-router.delete('/:photoId', authenticate, photoController.deletePhoto);
+router.delete(
+  '/:photoId',
+  authenticate,
+  uuidParamValidation('photoId'),
+  validateRequest,
+  photoController.deletePhoto
+);
 
 /**
  * @route   PATCH /api/users/me/photos/:photoId/primary
  * @desc    Set photo as primary
  * @access  Protected
  */
-router.patch('/:photoId/primary', authenticate, photoController.setPrimaryPhoto);
+router.patch(
+  '/:photoId/primary',
+  authenticate,
+  uuidParamValidation('photoId'),
+  validateRequest,
+  photoController.setPrimaryPhoto
+);
 
 /**
  * @route   PATCH /api/users/me/photos/reorder
@@ -44,28 +62,52 @@ router.patch('/reorder', authenticate, photoController.reorderPhotos);
  * @desc    Toggle photo privacy
  * @access  Protected
  */
-router.patch('/:photoId/privacy', authenticate, photoController.togglePhotoPrivacy);
+router.patch(
+  '/:photoId/privacy',
+  authenticate,
+  photoPrivacyValidation,
+  validateRequest,
+  photoController.togglePhotoPrivacy
+);
 
 /**
  * @route   GET /api/users/me/photos/access-requests
  * @desc    Get photo access requests (sent/received)
  * @access  Protected
  */
-router.get('/access-requests', authenticate, photoController.getPhotoAccessRequests);
+router.get(
+  '/access-requests',
+  authenticate,
+  paginationValidation,
+  validateRequest,
+  photoController.getPhotoAccessRequests
+);
 
 /**
  * @route   PATCH /api/users/me/photos/access-requests/:requestId/accept
  * @desc    Accept photo access request
  * @access  Protected
  */
-router.patch('/access-requests/:requestId/accept', authenticate, photoController.acceptPhotoAccessRequest);
+router.patch(
+  '/access-requests/:requestId/accept',
+  authenticate,
+  uuidParamValidation('requestId'),
+  validateRequest,
+  photoController.acceptPhotoAccessRequest
+);
 
 /**
  * @route   PATCH /api/users/me/photos/access-requests/:requestId/reject
  * @desc    Reject photo access request
  * @access  Protected
  */
-router.patch('/access-requests/:requestId/reject', authenticate, photoController.rejectPhotoAccessRequest);
+router.patch(
+  '/access-requests/:requestId/reject',
+  authenticate,
+  uuidParamValidation('requestId'),
+  validateRequest,
+  photoController.rejectPhotoAccessRequest
+);
 
 module.exports = router;
 

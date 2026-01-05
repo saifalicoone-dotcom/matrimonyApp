@@ -2,6 +2,12 @@ const express = require("express");
 const router = express.Router();
 const settingsController = require("../controllers/settingsController");
 const { authenticate } = require("../middleware/auth");
+const {
+  changePasswordValidation,
+  updateEmailValidation,
+  updatePhoneValidation,
+} = require("../middleware/validationSchemas");
+const validateRequest = require("../middleware/validateRequest");
 
 /**
  * @route   GET /api/users/me/settings
@@ -15,21 +21,39 @@ router.get("/", authenticate, settingsController.getAccountSettings);
  * @desc    Change password
  * @access  Protected
  */
-router.patch("/password", authenticate, settingsController.changePassword);
+router.patch(
+  "/password",
+  authenticate,
+  changePasswordValidation,
+  validateRequest,
+  settingsController.changePassword
+);
 
 /**
  * @route   PATCH /api/users/me/email
  * @desc    Update email
  * @access  Protected
  */
-router.patch("/email", authenticate, settingsController.updateEmail);
+router.patch(
+  "/email",
+  authenticate,
+  updateEmailValidation,
+  validateRequest,
+  settingsController.updateEmail
+);
 
 /**
  * @route   PATCH /api/users/me/phone
  * @desc    Update phone
  * @access  Protected
  */
-router.patch("/phone", authenticate, settingsController.updatePhone);
+router.patch(
+  "/phone",
+  authenticate,
+  updatePhoneValidation,
+  validateRequest,
+  settingsController.updatePhone
+);
 
 /**
  * @route   PATCH /api/users/me/privacy
