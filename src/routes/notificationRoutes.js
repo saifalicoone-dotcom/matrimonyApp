@@ -31,6 +31,8 @@ router.get(
 router.patch(
   "/:notificationId/read",
   authenticate,
+  uuidParamValidation("notificationId"),
+  validateRequest,
   notificationController.markAsRead
 );
 
@@ -53,6 +55,8 @@ router.patch(
 router.delete(
   "/:notificationId",
   authenticate,
+  uuidParamValidation("notificationId"),
+  validateRequest,
   notificationController.deleteNotification
 );
 
