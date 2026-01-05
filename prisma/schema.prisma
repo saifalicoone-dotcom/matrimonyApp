@@ -141,8 +141,11 @@ model Profile {
   partnerPreferences String? @db.Text
 
   // Verification
-  isVerified           Boolean @default(false)
+  isVerified           Boolean   @default(false)
   verificationDocument String? // URL to verification document
+  faceEncoding         Json? // Face encoding array from face-api.js (128-512 numbers)
+  faceVerified         Boolean   @default(false) // Face verification status
+  faceVerificationDate DateTime? // When face was verified
 
   // Visibility Settings
   profileVisible Boolean @default(true)
