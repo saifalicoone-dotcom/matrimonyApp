@@ -117,29 +117,38 @@ const register = async (req, res, next) => {
 /**
  * User Login
  * POST /api/auth/login
+ * Supports login with email or phone number
  */
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, phone, password } = req.body;
 
-    // Validation
-    if (!email || !password) {
+    // Validation - either email or phone required
+    if ((!email && !phone) || !password) {
       return res.status(400).json({
         status: "error",
-        message: "Email and password are required.",
-        error: "Email and password fields are mandatory.",
+        message: "Email/phone and password are required.",
+        error: "Email/phone and password fields are mandatory.",
       });
     }
 
-    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    let user;
+
+    // Find user by email or phone
+    if (email) {
+      user = await prisma.user.findUnique({
+        where: { email },
+      });
+    } else if (phone) {
+      user = await prisma.user.findUnique({
+        where: { phone },
+      });
+    }
 
     if (!user) {
       return res.status(401).json({
         status: "error",
-        message: "Invalid email or password.",
+        message: "Invalid credentials.",
         error: "Authentication failed.",
       });
     }
@@ -159,7 +168,7 @@ const login = async (req, res, next) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         status: "error",
-        message: "Invalid email or password.",
+        message: "Invalid credentials.",
         error: "Authentication failed.",
       });
     }
@@ -288,9 +297,120 @@ const refreshToken = async (req, res, next) => {
   }
 };
 
+/**
+ * Send OTP for phone verification
+ * POST /api/auth/send-otp
+ */
+const sendOTP = async (req, res, next) => {
+  try {
+    const { phone } = req.body;
+
+    // Validation
+    if (!phone) {
+      return res.status(400).json({
+        status: "error",
+        message: "Phone number is required.",
+        error: "Phone field is mandatory.",
+      });
+    }
+
+    // Validate phone format
+    const phoneRegex =
+      /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid phone number format.",
+        error: "Please provide a valid phone number.",
+      });
+    }
+
+    const { generateAndSendOTP } = require("../utils/otp");
+
+    // Generate and send OTP
+    const otp = await generateAndSendOTP(phone);
+
+    res.json({
+      status: "success",
+      message: "OTP sent successfully to your phone.",
+      data: process.env.NODE_ENV === "development" ? { otp } : {}, // Only return OTP in development
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Verify OTP for phone verification
+ * POST /api/auth/verify-otp
+ */
+const verifyOTP = async (req, res, next) => {
+  try {
+    const { phone, otp } = req.body;
+
+    // Validation
+    if (!phone || !otp) {
+      return res.status(400).json({
+        status: "error",
+        message: "Phone number and OTP are required.",
+        error: "Phone and OTP fields are mandatory.",
+      });
+    }
+
+    const { verifyOTP } = require("../utils/otp");
+
+    // Verify OTP
+    const isValid = await verifyOTP(phone, otp);
+
+    if (!isValid) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid or expired OTP.",
+        error: "Please request a new OTP.",
+      });
+    }
+
+    // Find user by phone and update phone verification status
+    const user = await prisma.user.findUnique({
+      where: { phone },
+      select: {
+        id: true,
+        phone: true,
+        isPhoneVerified: true,
+      },
+    });
+
+    if (user) {
+      // Update phone verification status
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { isPhoneVerified: true },
+      });
+
+      // Update profile phone verification if exists
+      await prisma.profile.updateMany({
+        where: { userId: user.id },
+        data: { phone: user.phone }, // Ensure profile phone matches
+      });
+    }
+
+    res.json({
+      status: "success",
+      message: "Phone number verified successfully.",
+      data: {
+        phoneVerified: true,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
   logout,
   refreshToken,
+  sendOTP,
+  verifyOTP,
 };

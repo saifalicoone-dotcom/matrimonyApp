@@ -12,16 +12,19 @@ const createOrUpdateProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const {
+      profileFor,
       firstName,
       lastName,
       dateOfBirth,
       gender,
       height,
       maritalStatus,
+      numberOfChildren,
       email,
       phone,
       withContact,
       education,
+      highestQualification,
       occupation,
       income,
       country,
@@ -36,7 +39,10 @@ const createOrUpdateProfile = async (req, res, next) => {
       familyType,
       fatherOccupation,
       motherOccupation,
-      siblings,
+      numberOfBrothers,
+      numberOfSisters,
+      marriedBrothers,
+      marriedSisters,
       diet,
       smoking,
       drinking,
@@ -121,12 +127,96 @@ const createOrUpdateProfile = async (req, res, next) => {
 
     // Validate marital status enum
     if (maritalStatus) {
-      const validMaritalStatuses = ['NEVER_MARRIED', 'DIVORCED', 'WIDOWED', 'ANNULLED'];
+      const validMaritalStatuses = ['NEVER_MARRIED', 'AWAITING_DIVORCE', 'DIVORCED', 'WIDOWED', 'ANNULLED'];
       if (!validMaritalStatuses.includes(maritalStatus.toUpperCase())) {
         return res.status(400).json({
           status: 'error',
           message: 'Invalid marital status.',
           error: 'MaritalStatus validation failed.',
+        });
+      }
+    }
+
+    // Validate profileFor enum (if provided)
+    if (profileFor) {
+      const validProfileFor = ['SELF', 'SON', 'DAUGHTER', 'BROTHER', 'SISTER', 'RELATIVE', 'FRIEND'];
+      if (!validProfileFor.includes(profileFor.toUpperCase())) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Invalid profileFor value.',
+          error: 'ProfileFor validation failed.',
+        });
+      }
+    }
+
+    // Validate numberOfChildren (required for divorced/widowed/annulled/awaiting divorce)
+    const requiresChildren = maritalStatus && ['DIVORCED', 'WIDOWED', 'ANNULLED', 'AWAITING_DIVORCE'].includes(maritalStatus.toUpperCase());
+    if (requiresChildren && numberOfChildren === undefined) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Number of children is required for divorced/widowed/annulled/awaiting divorce status.',
+        error: 'numberOfChildren field is mandatory.',
+      });
+    }
+
+    // Validate numberOfChildren (should be >= 0 if provided)
+    if (numberOfChildren !== undefined && (numberOfChildren < 0 || !Number.isInteger(Number(numberOfChildren)))) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Number of children must be a non-negative integer.',
+        error: 'Invalid numberOfChildren value.',
+      });
+    }
+
+    // Validate siblings numbers (should be >= 0 if provided)
+    if (numberOfBrothers !== undefined && (numberOfBrothers < 0 || !Number.isInteger(Number(numberOfBrothers)))) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Number of brothers must be a non-negative integer.',
+        error: 'Invalid numberOfBrothers value.',
+      });
+    }
+
+    if (numberOfSisters !== undefined && (numberOfSisters < 0 || !Number.isInteger(Number(numberOfSisters)))) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Number of sisters must be a non-negative integer.',
+        error: 'Invalid numberOfSisters value.',
+      });
+    }
+
+    // Validate marriedBrothers (should be >= 0 and <= numberOfBrothers)
+    if (marriedBrothers !== undefined) {
+      if (marriedBrothers < 0 || !Number.isInteger(Number(marriedBrothers))) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Number of married brothers must be a non-negative integer.',
+          error: 'Invalid marriedBrothers value.',
+        });
+      }
+      if (numberOfBrothers !== undefined && marriedBrothers > numberOfBrothers) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Number of married brothers cannot exceed total number of brothers.',
+          error: 'Invalid marriedBrothers value.',
+        });
+      }
+    }
+
+    // Validate marriedSisters (should be >= 0 and <= numberOfSisters)
+    if (marriedSisters !== undefined) {
+      if (marriedSisters < 0 || !Number.isInteger(Number(marriedSisters))) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Number of married sisters must be a non-negative integer.',
+          error: 'Invalid marriedSisters value.',
+        });
+      }
+      if (numberOfSisters !== undefined && marriedSisters > numberOfSisters) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Number of married sisters cannot exceed total number of sisters.',
+          error: 'Invalid marriedSisters value.',
         });
       }
     }
@@ -152,6 +242,7 @@ const createOrUpdateProfile = async (req, res, next) => {
     // Prepare profile data
     const profileData = {
       userId,
+      profileFor: profileFor ? profileFor.toUpperCase() : 'SELF',
       firstName,
       lastName: lastName || null,
       dateOfBirth: new Date(dateOfBirth),
@@ -159,10 +250,12 @@ const createOrUpdateProfile = async (req, res, next) => {
       gender: gender.toUpperCase(),
       height: height ? parseFloat(height) : null,
       maritalStatus: maritalStatus ? maritalStatus.toUpperCase() : 'NEVER_MARRIED',
+      numberOfChildren: numberOfChildren !== undefined ? Number(numberOfChildren) : null,
       email: email || user.email,
       phone: phone || user.phone || null,
       withContact: withContact !== undefined ? withContact : false,
       education: education || null,
+      highestQualification: highestQualification || null,
       occupation: occupation || null,
       income: income || null,
       country: country || null,
@@ -177,7 +270,10 @@ const createOrUpdateProfile = async (req, res, next) => {
       familyType: familyType || null,
       fatherOccupation: fatherOccupation || null,
       motherOccupation: motherOccupation || null,
-      siblings: siblings || null,
+      numberOfBrothers: numberOfBrothers !== undefined ? Number(numberOfBrothers) : 0,
+      numberOfSisters: numberOfSisters !== undefined ? Number(numberOfSisters) : 0,
+      marriedBrothers: marriedBrothers !== undefined ? Number(marriedBrothers) : 0,
+      marriedSisters: marriedSisters !== undefined ? Number(marriedSisters) : 0,
       diet: diet ? diet.toUpperCase() : null,
       smoking: smoking !== undefined ? smoking : false,
       drinking: drinking !== undefined ? drinking : false,
@@ -296,8 +392,8 @@ const getUserProfile = async (req, res, next) => {
     const isBlocked = await prisma.blockList.findFirst({
       where: {
         OR: [
-          { userId: parseInt(userId), blockedUserId: viewerId },
-          { userId: viewerId, blockedUserId: parseInt(userId) },
+          { userId: userId, blockedUserId: viewerId },
+          { userId: viewerId, blockedUserId: userId },
         ],
       },
     });
@@ -311,7 +407,7 @@ const getUserProfile = async (req, res, next) => {
     }
 
     const profile = await prisma.profile.findUnique({
-      where: { userId: parseInt(userId) },
+      where: { userId: userId },
       include: {
         user: {
           select: {

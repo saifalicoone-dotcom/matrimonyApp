@@ -24,6 +24,7 @@ const messageRoutes = require("./src/routes/messageRoutes");
 const settingsRoutes = require("./src/routes/settingsRoutes");
 const blockRoutes = require("./src/routes/blockRoutes");
 const notificationRoutes = require("./src/routes/notificationRoutes");
+const shortlistRoutes = require("./src/routes/shortlistRoutes");
 
 // Basic route
 app.get("/", (req, res) => {
@@ -55,6 +56,7 @@ app.use("/api/search", searchRoutes);
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api/interests", interestRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/shortlist", shortlistRoutes);
 
 // Error handling middleware
 const {

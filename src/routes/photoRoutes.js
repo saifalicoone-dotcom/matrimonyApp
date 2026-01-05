@@ -39,5 +39,33 @@ router.patch('/:photoId/primary', authenticate, photoController.setPrimaryPhoto)
  */
 router.patch('/reorder', authenticate, photoController.reorderPhotos);
 
+/**
+ * @route   PATCH /api/users/me/photos/:photoId/privacy
+ * @desc    Toggle photo privacy
+ * @access  Protected
+ */
+router.patch('/:photoId/privacy', authenticate, photoController.togglePhotoPrivacy);
+
+/**
+ * @route   GET /api/users/me/photos/access-requests
+ * @desc    Get photo access requests (sent/received)
+ * @access  Protected
+ */
+router.get('/access-requests', authenticate, photoController.getPhotoAccessRequests);
+
+/**
+ * @route   PATCH /api/users/me/photos/access-requests/:requestId/accept
+ * @desc    Accept photo access request
+ * @access  Protected
+ */
+router.patch('/access-requests/:requestId/accept', authenticate, photoController.acceptPhotoAccessRequest);
+
+/**
+ * @route   PATCH /api/users/me/photos/access-requests/:requestId/reject
+ * @desc    Reject photo access request
+ * @access  Protected
+ */
+router.patch('/access-requests/:requestId/reject', authenticate, photoController.rejectPhotoAccessRequest);
+
 module.exports = router;
 

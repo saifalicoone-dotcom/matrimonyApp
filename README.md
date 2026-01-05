@@ -10,6 +10,7 @@ Node.js + Express backend for Matrimonial Web Application using Prisma ORM with 
 - **Database:** PostgreSQL
 - **Authentication:** JWT (jsonwebtoken)
 - **Password Hashing:** bcrypt
+- **File Storage:** Cloudflare R2
 
 ## Setup Instructions
 
@@ -128,6 +129,25 @@ The schema includes the following models:
 ## Environment Variables
 
 See `.env.example` for all required environment variables.
+
+### Cloudflare R2 Setup
+
+1. Create a Cloudflare R2 bucket
+2. Get your R2 credentials:
+   - Account ID
+   - Access Key ID
+   - Secret Access Key
+   - Bucket Name
+3. (Optional) Set up a custom domain for public access
+4. Add credentials to `.env` file:
+   ```
+   R2_ACCOUNT_ID="your_account_id"
+   R2_ACCESS_KEY_ID="your_access_key_id"
+   R2_SECRET_ACCESS_KEY="your_secret_access_key"
+   R2_BUCKET_NAME="your_bucket_name"
+   R2_ENDPOINT="https://your_account_id.r2.cloudflarestorage.com"
+   R2_PUBLIC_URL="https://your-custom-domain.com"  # Optional: custom domain
+   ```
 
 ## Scripts
 

@@ -20,10 +20,8 @@ const sendMessage = async (req, res, next) => {
       });
     }
 
-    const targetUserId = parseInt(toUserId);
-
     // Cannot send message to self
-    if (targetUserId === userId) {
+    if (toUserId === userId) {
       return res.status(400).json({
         status: "error",
         message: "Cannot send message to yourself.",
@@ -33,7 +31,7 @@ const sendMessage = async (req, res, next) => {
 
     // Check if target user exists
     const targetUser = await prisma.user.findUnique({
-      where: { id: targetUserId },
+      where: { id: toUserId },
       select: { id: true, isActive: true },
     });
 
@@ -49,8 +47,8 @@ const sendMessage = async (req, res, next) => {
     const isBlocked = await prisma.blockList.findFirst({
       where: {
         OR: [
-          { userId, blockedUserId: targetUserId },
-          { userId: targetUserId, blockedUserId: userId },
+          { userId, blockedUserId: toUserId },
+          { userId: toUserId, blockedUserId: userId },
         ],
       },
     });
@@ -70,7 +68,7 @@ const sendMessage = async (req, res, next) => {
     });
 
     const targetUserWithRole = await prisma.user.findUnique({
-      where: { id: targetUserId },
+      where: { id: toUserId },
       select: { role: true },
     });
 
@@ -78,8 +76,8 @@ const sendMessage = async (req, res, next) => {
     const mutualInterest = await prisma.interest.findFirst({
       where: {
         OR: [
-          { fromUserId: userId, toUserId: targetUserId, status: "ACCEPTED" },
-          { fromUserId: targetUserId, toUserId: userId, status: "ACCEPTED" },
+          { fromUserId: userId, toUserId: toUserId, status: "ACCEPTED" },
+          { fromUserId: toUserId, toUserId: userId, status: "ACCEPTED" },
         ],
       },
     });
@@ -98,7 +96,7 @@ const sendMessage = async (req, res, next) => {
     const message = await prisma.message.create({
       data: {
         fromUserId: userId,
-        toUserId: targetUserId,
+        toUserId: toUserId,
         content: content.trim(),
         isRead: false,
       },
@@ -122,7 +120,7 @@ const sendMessage = async (req, res, next) => {
     try {
       await prisma.notification.create({
         data: {
-          userId: targetUserId,
+          userId: toUserId,
           type: "message",
           title: "New Message",
           message: `You have received a new message.`,
@@ -206,17 +204,17 @@ const getConversations = async (req, res, next) => {
           select: {
             id: true,
             email: true,
+            photos: {
+              where: { isPrimary: true },
+              select: { url: true },
+              take: 1,
+            },
             profile: {
               select: {
                 firstName: true,
                 lastName: true,
                 age: true,
                 gender: true,
-                photos: {
-                  where: { isPrimary: true },
-                  select: { url: true },
-                  take: 1,
-                },
               },
             },
           },
@@ -272,14 +270,12 @@ const getMessages = async (req, res, next) => {
     const { userId: otherUserId } = req.params;
     const { page = 1, limit = 50 } = req.query;
 
-    const targetUserId = parseInt(otherUserId);
-
     // Check if blocked
     const isBlocked = await prisma.blockList.findFirst({
       where: {
         OR: [
-          { userId, blockedUserId: targetUserId },
-          { userId: targetUserId, blockedUserId: userId },
+          { userId, blockedUserId: otherUserId },
+          { userId: otherUserId, blockedUserId: userId },
         ],
       },
     });
@@ -300,8 +296,8 @@ const getMessages = async (req, res, next) => {
     const totalCount = await prisma.message.count({
       where: {
         OR: [
-          { fromUserId: userId, toUserId: targetUserId },
-          { fromUserId: targetUserId, toUserId: userId },
+          { fromUserId: userId, toUserId: otherUserId },
+          { fromUserId: otherUserId, toUserId: userId },
         ],
       },
     });
@@ -310,8 +306,8 @@ const getMessages = async (req, res, next) => {
     const messages = await prisma.message.findMany({
       where: {
         OR: [
-          { fromUserId: userId, toUserId: targetUserId },
-          { fromUserId: targetUserId, toUserId: userId },
+          { fromUserId: userId, toUserId: otherUserId },
+          { fromUserId: otherUserId, toUserId: userId },
         ],
       },
       skip,
@@ -336,7 +332,7 @@ const getMessages = async (req, res, next) => {
     // Mark messages as read (messages sent to current user)
     await prisma.message.updateMany({
       where: {
-        fromUserId: targetUserId,
+        fromUserId: otherUserId,
         toUserId: userId,
         isRead: false,
       },

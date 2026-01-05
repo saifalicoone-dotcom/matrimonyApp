@@ -24,9 +24,20 @@ enum Gender {
 
 enum MaritalStatus {
   NEVER_MARRIED
+  AWAITING_DIVORCE
   DIVORCED
   WIDOWED
   ANNULLED
+}
+
+enum ProfileFor {
+  SELF
+  SON
+  DAUGHTER
+  BROTHER
+  SISTER
+  RELATIVE
+  FRIEND
 }
 
 enum Diet {
@@ -52,18 +63,20 @@ model User {
   lastActive      DateTime @default(now())
 
   // Relations
-  profile           Profile?
-  photos            Photo[]
-  subscriptions     Subscription[]
-  sentInterests     Interest[]     @relation("SentInterests")
-  receivedInterests Interest[]     @relation("ReceivedInterests")
-  sentMessages      Message[]      @relation("SentMessages")
-  receivedMessages  Message[]      @relation("ReceivedMessages")
-  shortlists        Shortlist[]    @relation("UserShortlists")
-  shortlistedBy     Shortlist[]    @relation("ShortlistedUsers")
-  blockedUsers      BlockList[]    @relation("BlockerUsers")
-  blockedBy         BlockList[]    @relation("BlockedUsers")
-  notifications     Notification[]
+  profile                Profile?
+  photos                 Photo[]
+  subscriptions          Subscription[]
+  sentInterests          Interest[]           @relation("SentInterests")
+  receivedInterests      Interest[]           @relation("ReceivedInterests")
+  sentMessages           Message[]            @relation("SentMessages")
+  receivedMessages       Message[]            @relation("ReceivedMessages")
+  shortlists             Shortlist[]          @relation("UserShortlists")
+  shortlistedBy          Shortlist[]          @relation("ShortlistedUsers")
+  blockedUsers           BlockList[]          @relation("BlockerUsers")
+  blockedBy              BlockList[]          @relation("BlockedUsers")
+  notifications          Notification[]
+  photoAccessRequests    PhotoAccessRequest[] @relation("PhotoAccessRequester")
+  photoAccessRequestsFor PhotoAccessRequest[] @relation("PhotoAccessOwner")
 
   @@map("users")
 }
@@ -75,13 +88,15 @@ model Profile {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Personal Information
-  firstName     String
-  lastName      String?
-  dateOfBirth   DateTime
-  age           Int
-  gender        Gender
-  height        Float? // in cm
-  maritalStatus MaritalStatus @default(NEVER_MARRIED)
+  profileFor       ProfileFor    @default(SELF) // Who is this profile for
+  firstName        String
+  lastName         String?
+  dateOfBirth      DateTime
+  age              Int
+  gender           Gender
+  height           Float? // in cm
+  maritalStatus    MaritalStatus @default(NEVER_MARRIED)
+  numberOfChildren Int? // Only for divorced/widowed/annulled/awaiting divorce
 
   // Contact (stored but visibility controlled)
   email       String
@@ -89,9 +104,10 @@ model Profile {
   withContact Boolean @default(false) // Allow contact viewing
 
   // Education & Career
-  education  String?
-  occupation String?
-  income     String? // e.g., "5-10 Lakhs", "10-15 Lakhs"
+  education            String?
+  highestQualification String? // Highest qualification/degree
+  occupation           String?
+  income               String? // e.g., "5-10 Lakhs", "10-15 Lakhs"
 
   // Location
   country String?
@@ -110,7 +126,10 @@ model Profile {
   familyType       String? // "Nuclear", "Joint"
   fatherOccupation String?
   motherOccupation String?
-  siblings         String? // "1 Brother", "2 Sisters", etc.
+  numberOfBrothers Int?    @default(0) // Number of brothers
+  numberOfSisters  Int?    @default(0) // Number of sisters
+  marriedBrothers  Int?    @default(0) // Number of married brothers
+  marriedSisters   Int?    @default(0) // Number of married sisters
 
   // Lifestyle
   diet     Diet?
@@ -142,8 +161,9 @@ model Photo {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  url       String // S3 URL or cloud storage URL
+  url       String // R2 URL or cloud storage URL
   isPrimary Boolean  @default(false)
+  isPrivate Boolean  @default(false) // If true, requires access request to view
   order     Int      @default(0) // For ordering photos
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -237,4 +257,34 @@ model Notification {
   createdAt     DateTime @default(now())
 
   @@map("notifications")
+}
+
+// OTP Model - Phone Verification OTPs
+model Otp {
+  id        String   @id @default(uuid())
+  phone     String
+  otp       String // 6-digit OTP
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone, isUsed])
+  @@map("otps")
+}
+
+// Photo Access Request Model - For requesting access to private photos
+model PhotoAccessRequest {
+  id          String   @id @default(uuid())
+  requesterId String // User requesting access
+  requester   User     @relation("PhotoAccessRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  ownerId     String // User who owns the private photos
+  owner       User     @relation("PhotoAccessOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  status      String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([requesterId, ownerId]) // One request per requester-owner pair
+  @@index([ownerId, status])
+  @@index([requesterId])
+  @@map("photo_access_requests")
 }

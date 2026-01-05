@@ -20,10 +20,8 @@ const blockUser = async (req, res, next) => {
       });
     }
 
-    const targetUserId = parseInt(blockedUserId);
-
     // Cannot block self
-    if (targetUserId === userId) {
+    if (blockedUserId === userId) {
       return res.status(400).json({
         status: "error",
         message: "Cannot block yourself.",
@@ -33,7 +31,7 @@ const blockUser = async (req, res, next) => {
 
     // Check if target user exists
     const targetUser = await prisma.user.findUnique({
-      where: { id: targetUserId },
+      where: { id: blockedUserId },
       select: { id: true, isActive: true },
     });
 
@@ -49,7 +47,7 @@ const blockUser = async (req, res, next) => {
     const existingBlock = await prisma.blockList.findFirst({
       where: {
         userId,
-        blockedUserId: targetUserId,
+        blockedUserId: blockedUserId,
       },
     });
 
@@ -65,7 +63,7 @@ const blockUser = async (req, res, next) => {
     const block = await prisma.blockList.create({
       data: {
         userId,
-        blockedUserId: targetUserId,
+        blockedUserId: blockedUserId,
       },
       include: {
         blockedUser: {
@@ -103,13 +101,11 @@ const unblockUser = async (req, res, next) => {
     const userId = req.user.id;
     const { blockedUserId } = req.params;
 
-    const targetUserId = parseInt(blockedUserId);
-
     // Find block
     const block = await prisma.blockList.findFirst({
       where: {
         userId,
-        blockedUserId: targetUserId,
+        blockedUserId: blockedUserId,
       },
     });
 
@@ -164,17 +160,17 @@ const getBlockedUsers = async (req, res, next) => {
           select: {
             id: true,
             email: true,
+            photos: {
+              where: { isPrimary: true },
+              select: { url: true },
+              take: 1,
+            },
             profile: {
               select: {
                 firstName: true,
                 lastName: true,
                 age: true,
                 gender: true,
-                photos: {
-                  where: { isPrimary: true },
-                  select: { url: true },
-                  take: 1,
-                },
               },
             },
           },

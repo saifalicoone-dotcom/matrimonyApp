@@ -20,10 +20,8 @@ const sendInterest = async (req, res, next) => {
       });
     }
 
-    const targetUserId = parseInt(toUserId);
-
     // Cannot send interest to self
-    if (targetUserId === userId) {
+    if (toUserId === userId) {
       return res.status(400).json({
         status: "error",
         message: "Cannot send interest to yourself.",
@@ -33,7 +31,7 @@ const sendInterest = async (req, res, next) => {
 
     // Check if target user exists
     const targetUser = await prisma.user.findUnique({
-      where: { id: targetUserId },
+      where: { id: toUserId },
       select: { id: true, isActive: true },
     });
 
@@ -49,8 +47,8 @@ const sendInterest = async (req, res, next) => {
     const isBlocked = await prisma.blockList.findFirst({
       where: {
         OR: [
-          { userId, blockedUserId: targetUserId },
-          { userId: targetUserId, blockedUserId: userId },
+          { userId, blockedUserId: toUserId },
+          { userId: toUserId, blockedUserId: userId },
         ],
       },
     });
@@ -67,7 +65,7 @@ const sendInterest = async (req, res, next) => {
     const existingInterest = await prisma.interest.findFirst({
       where: {
         fromUserId: userId,
-        toUserId: targetUserId,
+        toUserId: toUserId,
       },
     });
 
@@ -83,7 +81,7 @@ const sendInterest = async (req, res, next) => {
     const interest = await prisma.interest.create({
       data: {
         fromUserId: userId,
-        toUserId: targetUserId,
+        toUserId: toUserId,
         status: "PENDING",
       },
       include: {
@@ -106,7 +104,7 @@ const sendInterest = async (req, res, next) => {
     try {
       await prisma.notification.create({
         data: {
-          userId: targetUserId,
+          userId: toUserId,
           type: "interest",
           title: "New Interest Received",
           message: `You have received an interest from a user.`,
@@ -146,7 +144,7 @@ const acceptInterest = async (req, res, next) => {
 
     // Find interest
     const interest = await prisma.interest.findUnique({
-      where: { id: parseInt(interestId) },
+      where: { id: interestId },
       include: {
         fromUser: {
           select: {
@@ -245,7 +243,7 @@ const rejectInterest = async (req, res, next) => {
 
     // Find interest
     const interest = await prisma.interest.findUnique({
-      where: { id: parseInt(interestId) },
+      where: { id: interestId },
     });
 
     if (!interest) {
@@ -342,17 +340,17 @@ const getMyInterests = async (req, res, next) => {
           select: {
             id: true,
             email: true,
+            photos: {
+              where: { isPrimary: true },
+              select: { url: true },
+              take: 1,
+            },
             profile: {
               select: {
                 firstName: true,
                 lastName: true,
                 age: true,
                 gender: true,
-                photos: {
-                  where: { isPrimary: true },
-                  select: { url: true },
-                  take: 1,
-                },
               },
             },
           },
@@ -361,17 +359,17 @@ const getMyInterests = async (req, res, next) => {
           select: {
             id: true,
             email: true,
+            photos: {
+              where: { isPrimary: true },
+              select: { url: true },
+              take: 1,
+            },
             profile: {
               select: {
                 firstName: true,
                 lastName: true,
                 age: true,
                 gender: true,
-                photos: {
-                  where: { isPrimary: true },
-                  select: { url: true },
-                  take: 1,
-                },
               },
             },
           },
@@ -407,4 +405,3 @@ module.exports = {
   rejectInterest,
   getMyInterests,
 };
-

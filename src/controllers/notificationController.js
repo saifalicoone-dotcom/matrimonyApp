@@ -99,7 +99,7 @@ const markAsRead = async (req, res, next) => {
 
     // Find notification
     const notification = await prisma.notification.findUnique({
-      where: { id: parseInt(notificationId) },
+      where: { id: notificationId },
     });
 
     if (!notification) {
@@ -173,7 +173,7 @@ const deleteNotification = async (req, res, next) => {
 
     // Find notification
     const notification = await prisma.notification.findUnique({
-      where: { id: parseInt(notificationId) },
+      where: { id: notificationId },
     });
 
     if (!notification) {
