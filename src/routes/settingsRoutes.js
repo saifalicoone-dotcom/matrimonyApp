@@ -2,6 +2,12 @@ const express = require("express");
 const router = express.Router();
 const settingsController = require("../controllers/settingsController");
 const { authenticate } = require("../middleware/auth");
+const {
+  changePasswordValidation,
+  updateEmailValidation,
+  updatePhoneValidation,
+} = require("../middleware/validationSchemas");
+const validateRequest = require("../middleware/validateRequest");
 
 /**
  * @route   GET /api/users/me/settings

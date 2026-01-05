@@ -2,13 +2,21 @@ const express = require("express");
 const router = express.Router();
 const shortlistController = require("../controllers/shortlistController");
 const { authenticate } = require("../middleware/auth");
+const { shortlistValidation } = require("../middleware/validationSchemas");
+const validateRequest = require("../middleware/validateRequest");
 
 /**
  * @route   POST /api/shortlist
  * @desc    Add profile to shortlist
  * @access  Protected
  */
-router.post("/", authenticate, shortlistController.addToShortlist);
+router.post(
+  "/",
+  authenticate,
+  shortlistValidation,
+  validateRequest,
+  shortlistController.addToShortlist
+);
 
 /**
  * @route   GET /api/shortlist

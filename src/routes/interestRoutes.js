@@ -2,13 +2,21 @@ const express = require("express");
 const router = express.Router();
 const interestController = require("../controllers/interestController");
 const { authenticate } = require("../middleware/auth");
+const { sendInterestValidation } = require("../middleware/validationSchemas");
+const validateRequest = require("../middleware/validateRequest");
 
 /**
  * @route   POST /api/interests
  * @desc    Send interest to a user
  * @access  Protected
  */
-router.post("/", authenticate, interestController.sendInterest);
+router.post(
+  "/",
+  authenticate,
+  sendInterestValidation,
+  validateRequest,
+  interestController.sendInterest
+);
 
 /**
  * @route   GET /api/interests

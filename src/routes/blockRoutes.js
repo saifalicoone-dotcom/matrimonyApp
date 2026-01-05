@@ -2,13 +2,21 @@ const express = require("express");
 const router = express.Router();
 const blockController = require("../controllers/blockController");
 const { authenticate } = require("../middleware/auth");
+const { blockUserValidation } = require("../middleware/validationSchemas");
+const validateRequest = require("../middleware/validateRequest");
 
 /**
  * @route   POST /api/users/me/blocks
  * @desc    Block a user
  * @access  Protected
  */
-router.post("/", authenticate, blockController.blockUser);
+router.post(
+  "/",
+  authenticate,
+  blockUserValidation,
+  validateRequest,
+  blockController.blockUser
+);
 
 /**
  * @route   GET /api/users/me/blocks
