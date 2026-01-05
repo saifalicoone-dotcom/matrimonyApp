@@ -2,7 +2,11 @@ const express = require("express");
 const router = express.Router();
 const shortlistController = require("../controllers/shortlistController");
 const { authenticate } = require("../middleware/auth");
-const { shortlistValidation } = require("../middleware/validationSchemas");
+const {
+  shortlistValidation,
+  uuidParamValidation,
+  paginationValidation,
+} = require("../middleware/validationSchemas");
 const validateRequest = require("../middleware/validateRequest");
 
 /**
@@ -36,14 +40,26 @@ router.get(
  * @desc    Remove profile from shortlist
  * @access  Protected
  */
-router.delete("/:shortlistedUserId", authenticate, shortlistController.removeFromShortlist);
+router.delete(
+  "/:shortlistedUserId",
+  authenticate,
+  uuidParamValidation("shortlistedUserId"),
+  validateRequest,
+  shortlistController.removeFromShortlist
+);
 
 /**
  * @route   GET /api/shortlist/:shortlistedUserId/check
  * @desc    Check if profile is shortlisted
  * @access  Protected
  */
-router.get("/:shortlistedUserId/check", authenticate, shortlistController.checkShortlistStatus);
+router.get(
+  "/:shortlistedUserId/check",
+  authenticate,
+  uuidParamValidation("shortlistedUserId"),
+  validateRequest,
+  shortlistController.checkShortlistStatus
+);
 
 module.exports = router;
 

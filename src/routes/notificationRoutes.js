@@ -10,7 +10,13 @@ const validateRequest = require("../middleware/validateRequest");
  * @desc    Get notifications
  * @access  Protected
  */
-router.get("/", authenticate, notificationController.getNotifications);
+router.get(
+  "/",
+  authenticate,
+  paginationValidation,
+  validateRequest,
+  notificationController.getNotifications
+);
 
 /**
  * @route   GET /api/users/me/notifications/unread-count

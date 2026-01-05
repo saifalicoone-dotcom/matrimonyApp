@@ -27,21 +27,39 @@ router.post(
  * @desc    Get my interests (sent/received)
  * @access  Protected
  */
-router.get("/", authenticate, interestController.getMyInterests);
+router.get(
+  "/",
+  authenticate,
+  paginationValidation,
+  validateRequest,
+  interestController.getMyInterests
+);
 
 /**
  * @route   PATCH /api/interests/:interestId/accept
  * @desc    Accept an interest
  * @access  Protected
  */
-router.patch("/:interestId/accept", authenticate, interestController.acceptInterest);
+router.patch(
+  "/:interestId/accept",
+  authenticate,
+  uuidParamValidation("interestId"),
+  validateRequest,
+  interestController.acceptInterest
+);
 
 /**
  * @route   PATCH /api/interests/:interestId/reject
  * @desc    Reject an interest
  * @access  Protected
  */
-router.patch("/:interestId/reject", authenticate, interestController.rejectInterest);
+router.patch(
+  "/:interestId/reject",
+  authenticate,
+  uuidParamValidation("interestId"),
+  validateRequest,
+  interestController.rejectInterest
+);
 
 module.exports = router;
 

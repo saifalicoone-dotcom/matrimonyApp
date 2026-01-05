@@ -2,7 +2,11 @@ const express = require("express");
 const router = express.Router();
 const blockController = require("../controllers/blockController");
 const { authenticate } = require("../middleware/auth");
-const { blockUserValidation } = require("../middleware/validationSchemas");
+const {
+  blockUserValidation,
+  uuidParamValidation,
+  paginationValidation,
+} = require("../middleware/validationSchemas");
 const validateRequest = require("../middleware/validateRequest");
 
 /**
@@ -36,7 +40,13 @@ router.get(
  * @desc    Unblock a user
  * @access  Protected
  */
-router.delete("/:blockedUserId", authenticate, blockController.unblockUser);
+router.delete(
+  "/:blockedUserId",
+  authenticate,
+  uuidParamValidation("blockedUserId"),
+  validateRequest,
+  blockController.unblockUser
+);
 
 module.exports = router;
 

@@ -2,7 +2,11 @@ const express = require("express");
 const router = express.Router();
 const messageController = require("../controllers/messageController");
 const { authenticate } = require("../middleware/auth");
-const { sendMessageValidation } = require("../middleware/validationSchemas");
+const {
+  sendMessageValidation,
+  uuidParamValidation,
+  paginationValidation,
+} = require("../middleware/validationSchemas");
 const validateRequest = require("../middleware/validateRequest");
 
 /**
@@ -36,7 +40,13 @@ router.get(
  * @desc    Get messages with a specific user
  * @access  Protected
  */
-router.get("/:userId", authenticate, messageController.getMessages);
+router.get(
+  "/:userId",
+  authenticate,
+  uuidParamValidation("userId"),
+  validateRequest,
+  messageController.getMessages
+);
 
 module.exports = router;
 
