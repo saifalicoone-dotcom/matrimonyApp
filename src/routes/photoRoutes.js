@@ -75,21 +75,39 @@ router.patch(
  * @desc    Get photo access requests (sent/received)
  * @access  Protected
  */
-router.get('/access-requests', authenticate, photoController.getPhotoAccessRequests);
+router.get(
+  '/access-requests',
+  authenticate,
+  paginationValidation,
+  validateRequest,
+  photoController.getPhotoAccessRequests
+);
 
 /**
  * @route   PATCH /api/users/me/photos/access-requests/:requestId/accept
  * @desc    Accept photo access request
  * @access  Protected
  */
-router.patch('/access-requests/:requestId/accept', authenticate, photoController.acceptPhotoAccessRequest);
+router.patch(
+  '/access-requests/:requestId/accept',
+  authenticate,
+  uuidParamValidation('requestId'),
+  validateRequest,
+  photoController.acceptPhotoAccessRequest
+);
 
 /**
  * @route   PATCH /api/users/me/photos/access-requests/:requestId/reject
  * @desc    Reject photo access request
  * @access  Protected
  */
-router.patch('/access-requests/:requestId/reject', authenticate, photoController.rejectPhotoAccessRequest);
+router.patch(
+  '/access-requests/:requestId/reject',
+  authenticate,
+  uuidParamValidation('requestId'),
+  validateRequest,
+  photoController.rejectPhotoAccessRequest
+);
 
 module.exports = router;
 
