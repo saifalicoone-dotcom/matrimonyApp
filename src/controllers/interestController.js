@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { deductMoney, INTEREST_FEE } = require("./walletController");
 
 const prisma = new PrismaClient();
 
@@ -77,27 +78,93 @@ const sendInterest = async (req, res, next) => {
       });
     }
 
-    // Create interest
-    const interest = await prisma.interest.create({
-      data: {
-        fromUserId: userId,
-        toUserId: toUserId,
-        status: "PENDING",
-      },
-      include: {
-        fromUser: {
-          select: {
-            id: true,
-            email: true,
+    // Check wallet balance and deduct money
+    let walletResult = null;
+    let contactUnlocked = false;
+
+    try {
+      // Get or create wallet
+      let wallet = await prisma.wallet.findUnique({
+        where: { userId },
+      });
+
+      if (!wallet) {
+        wallet = await prisma.wallet.create({
+          data: {
+            userId,
+            balance: 0,
+          },
+        });
+      }
+
+      // Check if balance is sufficient
+      if (wallet.balance < INTEREST_FEE) {
+        return res.status(402).json({
+          status: "error",
+          message: "Insufficient wallet balance. Please add money to send interest.",
+          error: "INSUFFICIENT_BALANCE",
+          data: {
+            required: INTEREST_FEE,
+            current: wallet.balance,
+          },
+        });
+      }
+
+      // Deduct money using database transaction
+      walletResult = await deductMoney(
+        userId,
+        INTEREST_FEE,
+        `Deducted ₹${INTEREST_FEE} for sending interest`,
+        null, // Will be set after interest creation
+        "INTEREST"
+      );
+
+      contactUnlocked = true;
+    } catch (error) {
+      if (error.message === "INSUFFICIENT_BALANCE") {
+        return res.status(402).json({
+          status: "error",
+          message: "Insufficient wallet balance. Please add money to send interest.",
+          error: "INSUFFICIENT_BALANCE",
+        });
+      }
+      throw error;
+    }
+
+    // Create interest with contact unlocked
+    const interest = await prisma.$transaction(async (tx) => {
+      const newInterest = await tx.interest.create({
+        data: {
+          fromUserId: userId,
+          toUserId: toUserId,
+          status: "PENDING",
+          contactUnlocked: contactUnlocked,
+        },
+        include: {
+          fromUser: {
+            select: {
+              id: true,
+              email: true,
+            },
+          },
+          toUser: {
+            select: {
+              id: true,
+              email: true,
+            },
           },
         },
-        toUser: {
-          select: {
-            id: true,
-            email: true,
-          },
-        },
-      },
+      });
+
+      // Update transaction reference if wallet deduction was successful
+      if (walletResult && walletResult.transaction) {
+        await tx.walletTransaction.update({
+          where: { id: walletResult.transaction.id },
+          data: { referenceId: newInterest.id },
+        });
+      }
+
+      return newInterest;
     });
 
     // Create notification for target user
@@ -116,10 +183,26 @@ const sendInterest = async (req, res, next) => {
       // Continue even if notification fails
     }
 
+    // Get updated wallet balance
+    const updatedWallet = walletResult
+      ? await prisma.wallet.findUnique({
+          where: { userId },
+          select: { balance: true },
+        })
+      : null;
+
     res.status(201).json({
       status: "success",
-      message: "Interest sent successfully.",
-      data: { interest },
+      message: "Interest sent successfully. Contact unlocked.",
+      data: {
+        interest,
+        wallet: updatedWallet
+          ? {
+              balance: updatedWallet.balance,
+              deducted: INTEREST_FEE,
+            }
+          : null,
+      },
     });
   } catch (error) {
     if (error.code === "P2002") {

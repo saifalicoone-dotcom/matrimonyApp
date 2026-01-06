@@ -15,7 +15,9 @@ const registerValidation = [
     .withMessage("Password must be at least 6 characters long"),
   body("phone")
     .optional()
-    .matches(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/)
+    .matches(
+      /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/
+    )
     .withMessage("Please provide a valid phone number"),
 ];
 
@@ -27,11 +29,11 @@ const loginValidation = [
     .normalizeEmail(),
   body("phone")
     .optional()
-    .matches(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/)
+    .matches(
+      /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/
+    )
     .withMessage("Please provide a valid phone number"),
-  body("password")
-    .notEmpty()
-    .withMessage("Password is required"),
+  body("password").notEmpty().withMessage("Password is required"),
 ];
 
 // Profile validations
@@ -68,7 +70,9 @@ const profileValidation = [
     .normalizeEmail(),
   body("phone")
     .optional()
-    .matches(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/)
+    .matches(
+      /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/
+    )
     .withMessage("Please provide a valid phone number"),
   body("age")
     .optional()
@@ -140,9 +144,7 @@ const blockUserValidation = [
 
 // Photo validations
 const photoPrivacyValidation = [
-  param("photoId")
-    .isUUID()
-    .withMessage("Invalid photo ID format"),
+  param("photoId").isUUID().withMessage("Invalid photo ID format"),
 ];
 
 // Face verification validations
@@ -159,10 +161,7 @@ const storeFaceEncodingValidation = [
       }
       return true;
     }),
-  body("photoId")
-    .optional()
-    .isUUID()
-    .withMessage("Invalid photo ID format"),
+  body("photoId").optional().isUUID().withMessage("Invalid photo ID format"),
 ];
 
 const verifyFaceValidation = [
@@ -199,20 +198,26 @@ const updateEmailValidation = [
 
 const updatePhoneValidation = [
   body("phone")
-    .matches(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/)
+    .matches(
+      /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/
+    )
     .withMessage("Please provide a valid phone number"),
 ];
 
 // OTP validations
 const sendOTPValidation = [
   body("phone")
-    .matches(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/)
+    .matches(
+      /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/
+    )
     .withMessage("Please provide a valid phone number"),
 ];
 
 const verifyOTPValidation = [
   body("phone")
-    .matches(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/)
+    .matches(
+      /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/
+    )
     .withMessage("Please provide a valid phone number"),
   body("otp")
     .isLength({ min: 6, max: 6 })
@@ -235,9 +240,42 @@ const paginationValidation = [
 
 // UUID param validation
 const uuidParamValidation = (paramName = "id") => [
-  param(paramName)
+  param(paramName).isUUID().withMessage(`Invalid ${paramName} format`),
+];
+
+// Add money validation
+const addMoneyValidation = [
+  body("amount")
+    .notEmpty()
+    .withMessage("Amount is required")
+    .isFloat({ min: 0.01 })
+    .withMessage("Amount must be greater than 0"),
+];
+
+// Create payment order validation
+const createOrderValidation = [
+  body("amount")
+    .notEmpty()
+    .withMessage("Amount is required")
+    .isFloat({ min: 1 })
+    .withMessage("Minimum amount is ₹1"),
+];
+
+// Verify payment validation
+const verifyPaymentValidation = [
+  body("razorpay_order_id")
+    .notEmpty()
+    .withMessage("Razorpay order ID is required"),
+  body("razorpay_payment_id")
+    .notEmpty()
+    .withMessage("Razorpay payment ID is required"),
+  body("razorpay_signature")
+    .notEmpty()
+    .withMessage("Razorpay signature is required"),
+  body("transactionId")
+    .notEmpty()
     .isUUID()
-    .withMessage(`Invalid ${paramName} format`),
+    .withMessage("Valid transaction ID is required"),
 ];
 
 module.exports = {
@@ -258,6 +296,7 @@ module.exports = {
   verifyOTPValidation,
   paginationValidation,
   uuidParamValidation,
+  addMoneyValidation,
+  createOrderValidation,
+  verifyPaymentValidation,
 };
-
-

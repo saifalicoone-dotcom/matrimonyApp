@@ -130,6 +130,18 @@ The schema includes the following models:
 
 See `.env.example` for all required environment variables.
 
+Copy `.env.example` to `.env` and update with your actual values:
+```bash
+cp .env.example .env
+```
+
+### Required Environment Variables
+
+1. **Database**: `DATABASE_URL`
+2. **JWT**: `JWT_SECRET`, `JWT_REFRESH_SECRET`
+3. **Cloudflare R2**: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`
+4. **Razorpay**: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` (for payments)
+
 ### Cloudflare R2 Setup
 
 1. Create a Cloudflare R2 bucket
@@ -147,6 +159,22 @@ See `.env.example` for all required environment variables.
    R2_BUCKET_NAME="your_bucket_name"
    R2_ENDPOINT="https://your_account_id.r2.cloudflarestorage.com"
    R2_PUBLIC_URL="https://your-custom-domain.com"  # Optional: custom domain
+   ```
+
+### Razorpay Payment Gateway Setup
+
+1. Sign up at [Razorpay Dashboard](https://dashboard.razorpay.com/)
+2. Go to Settings → API Keys
+3. Generate API Keys (Key ID and Key Secret)
+4. Add credentials to `.env` file:
+   ```
+   RAZORPAY_KEY_ID="rzp_test_xxxxxxxxxxxxx"
+   RAZORPAY_KEY_SECRET="your_razorpay_key_secret"
+   RAZORPAY_WEBHOOK_SECRET="your_webhook_secret"  # Optional: for webhook verification
+   ```
+5. For webhooks, go to Settings → Webhooks and create a webhook URL pointing to:
+   ```
+   https://your-domain.com/api/payments/webhook
    ```
 
 ## Scripts

@@ -461,9 +461,103 @@ const getUserProfile = async (req, res, next) => {
   }
 };
 
+/**
+ * Get Contact Details of a User
+ * GET /api/users/:id/contact
+ */
+const getContactDetails = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { id: targetUserId } = req.params;
+
+    // Validation
+    if (!targetUserId) {
+      return res.status(400).json({
+        status: "error",
+        message: "User ID is required.",
+        error: "Invalid user ID.",
+      });
+    }
+
+    // Cannot view own contact (use profile endpoint instead)
+    if (targetUserId === userId) {
+      return res.status(400).json({
+        status: "error",
+        message: "Cannot view your own contact details.",
+        error: "Invalid request.",
+      });
+    }
+
+    // Check if target user exists
+    const targetUser = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true, isActive: true },
+    });
+
+    if (!targetUser || !targetUser.isActive) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found or inactive.",
+        error: "User does not exist.",
+      });
+    }
+
+    // Check if interest was sent and contact was unlocked
+    const interest = await prisma.interest.findFirst({
+      where: {
+        fromUserId: userId,
+        toUserId: targetUserId,
+        contactUnlocked: true,
+      },
+    });
+
+    if (!interest) {
+      return res.status(403).json({
+        status: "error",
+        message: "Contact details are locked. Send interest to unlock contact.",
+        error: "FORBIDDEN",
+      });
+    }
+
+    // Get profile with contact details
+    const profile = await prisma.profile.findUnique({
+      where: { userId: targetUserId },
+      select: {
+        email: true,
+        phone: true,
+        firstName: true,
+        lastName: true,
+      },
+    });
+
+    if (!profile) {
+      return res.status(404).json({
+        status: "error",
+        message: "Profile not found.",
+        error: "Profile does not exist.",
+      });
+    }
+
+    res.json({
+      status: "success",
+      message: "Contact details retrieved successfully.",
+      data: {
+        contact: {
+          email: profile.email,
+          phone: profile.phone,
+          name: `${profile.firstName} ${profile.lastName || ""}`.trim(),
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createOrUpdateProfile,
   getMyProfile,
   getUserProfile,
+  getContactDetails,
 };
 

@@ -77,6 +77,8 @@ model User {
   notifications          Notification[]
   photoAccessRequests    PhotoAccessRequest[] @relation("PhotoAccessRequester")
   photoAccessRequestsFor PhotoAccessRequest[] @relation("PhotoAccessOwner")
+  wallet                 Wallet?
+  walletTransactions     WalletTransaction[]
 
   @@map("users")
 }
@@ -176,14 +178,15 @@ model Photo {
 
 // Interest Model - Users expressing interest in each other
 model Interest {
-  id         String   @id @default(uuid())
-  fromUserId String
-  toUserId   String
-  fromUser   User     @relation("SentInterests", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUser     User     @relation("ReceivedInterests", fields: [toUserId], references: [id], onDelete: Cascade)
-  status     String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              String   @id @default(uuid())
+  fromUserId      String
+  toUserId        String
+  fromUser        User     @relation("SentInterests", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser          User     @relation("ReceivedInterests", fields: [toUserId], references: [id], onDelete: Cascade)
+  status          String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  contactUnlocked Boolean  @default(false) // Whether contact was unlocked (₹5 deducted)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@unique([fromUserId, toUserId])
   @@map("interests")
@@ -290,4 +293,51 @@ model PhotoAccessRequest {
   @@index([ownerId, status])
   @@index([requesterId])
   @@map("photo_access_requests")
+}
+
+// Wallet Model - User wallet for payments
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance   Float    @default(0) // Balance in INR
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+// Wallet Transaction Model - Transaction history
+model WalletTransaction {
+  id                String          @id @default(uuid())
+  walletId          String
+  wallet            Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  type              TransactionType // CREDIT or DEBIT
+  amount            Float // Transaction amount
+  balanceAfter      Float // Balance after this transaction
+  description       String? // Transaction description
+  referenceId       String? // Reference to related entity (e.g., interest ID)
+  referenceType     String? // Type of reference (e.g., "INTEREST", "ADD_MONEY", "PAYMENT")
+  // Razorpay payment fields
+  razorpayOrderId   String? // Razorpay order ID
+  razorpayPaymentId String? // Razorpay payment ID
+  razorpaySignature String? // Razorpay signature for verification
+  paymentStatus     String?         @default("PENDING") // PENDING, SUCCESS, FAILED
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  User              User?           @relation(fields: [userId], references: [id])
+  userId            String?
+
+  @@index([walletId])
+  @@index([referenceId, referenceType])
+  @@index([razorpayOrderId])
+  @@index([razorpayPaymentId])
+  @@map("wallet_transactions")
 }

@@ -45,5 +45,18 @@ router.post(
   photoController.requestPhotoAccess
 );
 
+/**
+ * @route   GET /api/users/:id/contact
+ * @desc    Get contact details of a user (only if interest sent and contact unlocked)
+ * @access  Protected
+ */
+router.get(
+  '/:id/contact',
+  authenticate,
+  uuidParamValidation('id'),
+  validateRequest,
+  profileController.getContactDetails
+);
+
 module.exports = router;
 
