@@ -243,6 +243,29 @@ const uuidParamValidation = (paramName = "id") => [
   param(paramName).isUUID().withMessage(`Invalid ${paramName} format`),
 ];
 
+// Subscription purchase validation
+const purchaseSubscriptionValidation = [
+  body("planType")
+    .notEmpty()
+    .withMessage("Plan type is required")
+    .isIn(["BASIC", "MEDIUM", "HIGH"])
+    .withMessage("Plan type must be BASIC, MEDIUM, or HIGH"),
+];
+
+// Subscription verification validation
+const verifySubscriptionValidation = [
+  body("razorpay_order_id")
+    .notEmpty()
+    .withMessage("Razorpay order ID is required"),
+  body("razorpay_payment_id")
+    .notEmpty()
+    .withMessage("Razorpay payment ID is required"),
+  body("razorpay_signature")
+    .notEmpty()
+    .withMessage("Razorpay signature is required"),
+  body("subscriptionId").isUUID().withMessage("Invalid subscription ID format"),
+];
+
 // Add money validation
 const addMoneyValidation = [
   body("amount")
@@ -342,4 +365,6 @@ module.exports = {
   verifyPaymentValidation,
   createReportValidation,
   reviewReportValidation,
+  purchaseSubscriptionValidation,
+  verifySubscriptionValidation,
 };

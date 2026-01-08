@@ -34,6 +34,7 @@ const faceVerificationRoutes = require("./src/routes/faceVerificationRoutes");
 const walletRoutes = require("./src/routes/walletRoutes");
 const paymentRoutes = require("./src/routes/paymentRoutes");
 const reportRoutes = require("./src/routes/reportRoutes");
+const subscriptionRoutes = require("./src/routes/subscriptionRoutes");
 
 // Basic route
 app.get("/", (req, res) => {
@@ -70,6 +71,7 @@ app.use("/api/users/me/face-verification", faceVerificationRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
 
 // Error handling middleware
 const {

@@ -1,0 +1,1069 @@
+{
+  "info": {
+    "name": "Matrimonial App API",
+    "_postman_id": "c4c9c5b7-0000-0000-0000-matrimonial-app",
+    "description": "Complete Postman collection for Matrimonial App backend APIs including subscription purchase endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"phone\": \"9999999999\",\n  \"password\": \"Password@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emailOrPhone\": \"test@example.com\",\n  \"password\": \"Password@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"] }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api", "auth", "refresh"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/send-otp", "host": ["{{baseUrl}}"], "path": ["api", "auth", "send-otp"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"9999999999\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/verify-otp", "host": ["{{baseUrl}}"], "path": ["api", "auth", "verify-otp"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"9999999999\",\n  \"otp\": \"123456\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "Get Available Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/subscriptions/plans", "host": ["{{baseUrl}}"], "path": ["api", "subscriptions", "plans"] }
+          }
+        },
+        {
+          "name": "Get My Subscription",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/subscriptions/my-subscription", "host": ["{{baseUrl}}"], "path": ["api", "subscriptions", "my-subscription"] }
+          }
+        },
+        {
+          "name": "Purchase Subscription (Buy Plan)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/subscriptions/purchase", "host": ["{{baseUrl}}"], "path": ["api", "subscriptions", "purchase"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planType\": \"BASIC\"\n}"
+            },
+            "description": "Buy subscription plan. planType can be: BASIC (₹99), MEDIUM (₹299), or HIGH (₹999)"
+          }
+        },
+        {
+          "name": "Verify Subscription Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/subscriptions/verify", "host": ["{{baseUrl}}"], "path": ["api", "subscriptions", "verify"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_order_id\": \"order_xxxxx\",\n  \"razorpay_payment_id\": \"pay_xxxxx\",\n  \"razorpay_signature\": \"signature_xxxxx\",\n  \"subscriptionId\": \"{{subscriptionId}}\"\n}"
+            },
+            "description": "Verify payment after Razorpay checkout and activate subscription"
+          }
+        },
+        {
+          "name": "Get Subscription History",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscriptions/history?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "subscriptions", "history"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "My Profile",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users/me/profile", "host": ["{{baseUrl}}"], "path": ["api", "users", "me", "profile"] }
+          }
+        },
+        {
+          "name": "Create/Update Profile (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/users/me/profile", "host": ["{{baseUrl}}"], "path": ["api", "users", "me", "profile"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"profileFor\": \"SELF\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"dateOfBirth\": \"1995-01-01T00:00:00.000Z\",\n  \"gender\": \"MALE\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Profile (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/users/me/profile", "host": ["{{baseUrl}}"], "path": ["api", "users", "me", "profile"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"User\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Other Users",
+      "item": [
+        {
+          "name": "Get User Profile by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{userId}}", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Get User Photos (with privacy)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}/photos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{userId}}", "photos"]
+            }
+          }
+        },
+        {
+          "name": "Request Photo Access",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}/photos/request-access",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{userId}}", "photos", "request-access"]
+            }
+          }
+        },
+        {
+          "name": "Get Contact Details",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}/contact",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{userId}}", "contact"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "My Photos",
+      "item": [
+        {
+          "name": "Upload Photo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "photo", "type": "file", "src": "" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/users/me/photos", "host": ["{{baseUrl}}"], "path": ["api", "users", "me", "photos"] }
+          }
+        },
+        {
+          "name": "Get My Photos",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users/me/photos", "host": ["{{baseUrl}}"], "path": ["api", "users", "me", "photos"] }
+          }
+        },
+        {
+          "name": "Delete Photo",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/photos/{{photoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "photos", "{{photoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Set Primary Photo",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/photos/{{photoId}}/primary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "photos", "{{photoId}}", "primary"]
+            }
+          }
+        },
+        {
+          "name": "Toggle Photo Privacy",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/photos/{{photoId}}/privacy",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "photos", "{{photoId}}", "privacy"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isPrivate\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Photo Access Requests (sent/received)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/photos/access-requests?type=all&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "photos", "access-requests"],
+              "query": [
+                { "key": "type", "value": "all" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Accept Photo Access Request",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/photos/access-requests/{{requestId}}/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "photos", "access-requests", "{{requestId}}", "accept"]
+            }
+          }
+        },
+        {
+          "name": "Reject Photo Access Request",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/photos/access-requests/{{requestId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "photos", "access-requests", "{{requestId}}", "reject"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Face Verification",
+      "item": [
+        {
+          "name": "Store Face Encoding",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/face-verification/store",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "face-verification", "store"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"photoUrl\": \"https://example.com/photo.jpg\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Verify Face",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/face-verification/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "face-verification", "verify"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"photoUrl\": \"https://example.com/live-photo.jpg\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Face Verification Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/face-verification/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "face-verification", "status"]
+            }
+          }
+        },
+        {
+          "name": "Reset Face Verification",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/face-verification/reset",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "face-verification", "reset"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Interests & Shortlist",
+      "item": [
+        {
+          "name": "Send Interest",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/interests", "host": ["{{baseUrl}}"], "path": ["api", "interests"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toUserId\": \"{{userId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Interests",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/interests?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "interests"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Accept Interest",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/interests/{{interestId}}/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "interests", "{{interestId}}", "accept"]
+            }
+          }
+        },
+        {
+          "name": "Reject Interest",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/interests/{{interestId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "interests", "{{interestId}}", "reject"]
+            }
+          }
+        },
+        {
+          "name": "Add to Shortlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/shortlist", "host": ["{{baseUrl}}"], "path": ["api", "shortlist"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shortlistedUserId\": \"{{userId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Shortlist",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/shortlist?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shortlist"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Check Shortlist Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/shortlist/{{userId}}/check",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shortlist", "{{userId}}", "check"]
+            }
+          }
+        },
+        {
+          "name": "Remove from Shortlist",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/shortlist/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shortlist", "{{userId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Block & Messages",
+      "item": [
+        {
+          "name": "Block User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/blocks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "blocks"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"blockedUserId\": \"{{userId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Blocked Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/blocks?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "blocks"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unblock User",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/blocks/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "blocks", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Send Message (HTTP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/messages", "host": ["{{baseUrl}}"], "path": ["api", "messages"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toUserId\": \"{{userId}}\",\n  \"content\": \"Hi!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Conversations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/messages/conversations?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "messages", "conversations"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Messages with User",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/messages/{{userId}}?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "messages", "{{userId}}"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wallet & Payments",
+      "item": [
+        {
+          "name": "Get Wallet",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/wallet", "host": ["{{baseUrl}}"], "path": ["api", "wallet"] }
+          }
+        },
+        {
+          "name": "Add Money",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/wallet/add-money",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "wallet", "add-money"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Razorpay Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/create-order",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "create-order"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 999,\n  \"currency\": \"INR\",\n  \"planType\": \"HIGH\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Verify Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "verify"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpayOrderId\": \"order_123\",\n  \"razorpayPaymentId\": \"pay_123\",\n  \"razorpaySignature\": \"signature_here\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/status/{{transactionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "status", "{{transactionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications & Search",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/notifications?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "notifications"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/notifications/unread-count",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "notifications", "unread-count"]
+            }
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/notifications/{{notificationId}}/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "notifications", "{{notificationId}}", "read"]
+            }
+          }
+        },
+        {
+          "name": "Mark All Read",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/notifications/mark-all-read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "notifications", "mark-all-read"]
+            }
+          }
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/notifications/{{notificationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "notifications", "{{notificationId}}"]
+            }
+          }
+        },
+        {
+          "name": "Search Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/search/users?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "search", "users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Recommendations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/recommendations?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "recommendations"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Settings & Reports",
+      "item": [
+        {
+          "name": "Get Account Settings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "settings"]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "password"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Password@123\",\n  \"newPassword\": \"NewPass@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Email",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/email",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "email"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"new@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Phone",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/phone",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "phone"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"9999999999\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Privacy Settings",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/privacy",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "privacy"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"profileVisible\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Deactivate Account",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me", "deactivate"]
+            }
+          }
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Create Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/reports", "host": ["{{baseUrl}}"], "path": ["api", "reports"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reportedUserId\": \"{{userId}}\",\n  \"type\": \"ALREADY_MARRIED\",\n  \"reason\": \"User is already married\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Reports",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/my-reports?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "my-reports"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin - Get All Reports",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/admin?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "admin"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin - Get Report by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/{{reportId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "{{reportId}}"]
+            }
+          }
+        },
+        {
+          "name": "Admin - Review Report",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminAccessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/{{reportId}}/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "{{reportId}}", "review"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\",\n  \"adminAction\": \"REFUND\",\n  \"adminNotes\": \"User already married, refunding wallets\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "adminAccessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "photoId",
+      "value": ""
+    },
+    {
+      "key": "requestId",
+      "value": ""
+    },
+    {
+      "key": "interestId",
+      "value": ""
+    },
+    {
+      "key": "notificationId",
+      "value": ""
+    },
+    {
+      "key": "transactionId",
+      "value": ""
+    },
+    {
+      "key": "reportId",
+      "value": ""
+    },
+    {
+      "key": "subscriptionId",
+      "value": ""
+    }
+  ]
+}
+
