@@ -356,37 +356,48 @@ const getUserPhotos = async (req, res, next) => {
     const hasPrivatePhotos = photos.some((photo) => photo.isPrivate);
 
     if (hasPrivatePhotos) {
-      // Check if viewer has accepted access
+      // Check access request status
       const accessRequest = await prisma.photoAccessRequest.findFirst({
         where: {
           requesterId: viewerId,
           ownerId: userId,
-          status: "ACCEPTED",
         },
+        orderBy: { createdAt: "desc" },
       });
 
-      if (!accessRequest) {
-        // Return only public photos
-        const publicPhotos = photos.filter((photo) => !photo.isPrivate);
+      // If access is ACCEPTED, return all photos
+      if (accessRequest && accessRequest.status === "ACCEPTED") {
         return res.json({
           status: "success",
-          message: "Some photos are private. Request access to view them.",
+          message: "Photos retrieved successfully.",
           data: {
-            photos: publicPhotos,
+            photos,
             hasPrivatePhotos: true,
-            accessGranted: false,
+            accessGranted: true,
+            requestStatus: "ACCEPTED",
           },
         });
       }
 
-      // Access granted, return all photos
+      // Return only public photos with request status
+      const publicPhotos = photos.filter((photo) => !photo.isPrivate);
+      
+      let requestStatus = "NONE";
+      if (accessRequest) {
+        requestStatus = accessRequest.status; // PENDING or REJECTED
+      }
+
       return res.json({
         status: "success",
-        message: "Photos retrieved successfully.",
+        message: requestStatus === "PENDING" 
+          ? "Some photos are private. Your access request is pending." 
+          : "Some photos are private. Request access to view them.",
         data: {
-          photos,
+          photos: publicPhotos,
           hasPrivatePhotos: true,
-          accessGranted: true,
+          accessGranted: false,
+          requestStatus: requestStatus, // NONE, PENDING, REJECTED, ACCEPTED
+          canRequestAccess: requestStatus !== "PENDING", // Show button only if not pending
         },
       });
     }

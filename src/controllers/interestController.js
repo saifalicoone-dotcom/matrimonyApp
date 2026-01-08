@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const { deductMoney, INTEREST_FEE } = require("./walletController");
+const { canSendInterest } = require("../services/subscriptionService");
 
 const prisma = new PrismaClient();
 
@@ -59,6 +60,21 @@ const sendInterest = async (req, res, next) => {
         status: "error",
         message: "Cannot send interest. User is blocked.",
         error: "Blocked user.",
+      });
+    }
+
+    // Check subscription limit for interests
+    const interestCheck = await canSendInterest(userId);
+    if (!interestCheck.canSend) {
+      return res.status(403).json({
+        status: "error",
+        message: interestCheck.reason,
+        error: "INTEREST_LIMIT_REACHED",
+        data: {
+          planType: interestCheck.planType,
+          limit: interestCheck.limit,
+          used: interestCheck.used,
+        },
       });
     }
 

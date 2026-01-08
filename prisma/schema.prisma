@@ -79,6 +79,10 @@ model User {
   photoAccessRequestsFor PhotoAccessRequest[] @relation("PhotoAccessOwner")
   wallet                 Wallet?
   walletTransactions     WalletTransaction[]
+  reportsSubmitted       Report[]             @relation("ReportReporter")
+  reportsReceived        Report[]             @relation("ReportReported")
+  chatUsers              ChatUser[]           @relation("UserChats")
+  chattedWithUsers       ChatUser[]           @relation("ChattedWithUsers")
 
   @@map("users")
 }
@@ -224,7 +228,7 @@ model Subscription {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  planType  String // "PREMIUM", "VIP"
+  planType  String // "BASIC", "MEDIUM", "HIGH"
   startDate DateTime @default(now())
   endDate   DateTime
   isActive  Boolean  @default(true)
@@ -234,6 +238,20 @@ model Subscription {
   updatedAt DateTime @updatedAt
 
   @@map("subscriptions")
+}
+
+// Chat User Tracking - Track unique users for MEDIUM plan (20 limit)
+model ChatUser {
+  id         String   @id @default(uuid())
+  userId     String // User who has subscription
+  chatUserId String // User they are chatting with
+  user       User     @relation("UserChats", fields: [userId], references: [id], onDelete: Cascade)
+  chatUser   User     @relation("ChattedWithUsers", fields: [chatUserId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, chatUserId]) // One entry per user pair
+  @@index([userId])
+  @@map("chat_users")
 }
 
 // BlockList Model - Blocked Users
@@ -314,6 +332,23 @@ enum TransactionType {
   DEBIT
 }
 
+enum ReportType {
+  ALREADY_MARRIED
+  FAKE_PROFILE
+  SPAM
+  INAPPROPRIATE_CONTENT
+  HARASSMENT
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  RESOLVED
+}
+
 // Wallet Transaction Model - Transaction history
 model WalletTransaction {
   id                String          @id @default(uuid())
@@ -340,4 +375,31 @@ model WalletTransaction {
   @@index([razorpayOrderId])
   @@index([razorpayPaymentId])
   @@map("wallet_transactions")
+}
+
+// Report Model - User reports for other users
+model Report {
+  id             String       @id @default(uuid())
+  reporterId     String // User who reported
+  reportedUserId String // User who is reported
+  reporter       User         @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser   User         @relation("ReportReported", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  type           ReportType // Type of report
+  reason         String?      @db.Text // Additional reason/details
+  status         ReportStatus @default(PENDING) // Report status
+  adminNotes     String?      @db.Text // Admin notes/decision
+  adminAction    String? // Action taken: REFUND, DEACTIVATE, REMOVE, WARNING, NONE
+  refundAmount   Float? // Amount refunded (if applicable)
+  refundedAt     DateTime? // When refund was processed
+  reviewedBy     String? // Admin user ID who reviewed
+  reviewedAt     DateTime? // When reviewed
+  resolvedAt     DateTime? // When resolved
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([reporterId, reportedUserId, type]) // One report per type per user pair
+  @@index([reportedUserId, status])
+  @@index([reporterId])
+  @@index([status])
+  @@map("reports")
 }

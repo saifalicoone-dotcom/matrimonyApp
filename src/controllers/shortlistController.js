@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { canAddToShortlist } = require("../services/subscriptionService");
 
 const prisma = new PrismaClient();
 
@@ -74,6 +75,21 @@ const addToShortlist = async (req, res, next) => {
         status: "error",
         message: "Cannot shortlist. User is blocked.",
         error: "Blocked user.",
+      });
+    }
+
+    // Check subscription limit for shortlist
+    const shortlistCheck = await canAddToShortlist(userId);
+    if (!shortlistCheck.canAdd) {
+      return res.status(403).json({
+        status: "error",
+        message: shortlistCheck.reason,
+        error: "SHORTLIST_LIMIT_REACHED",
+        data: {
+          planType: shortlistCheck.planType,
+          limit: shortlistCheck.limit,
+          used: shortlistCheck.used,
+        },
       });
     }
 

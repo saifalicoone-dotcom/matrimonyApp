@@ -278,6 +278,47 @@ const verifyPaymentValidation = [
     .withMessage("Valid transaction ID is required"),
 ];
 
+// Create report validation
+const createReportValidation = [
+  body("reportedUserId")
+    .notEmpty()
+    .isUUID()
+    .withMessage("Reported user ID is required and must be valid UUID"),
+  body("type")
+    .notEmpty()
+    .isIn([
+      "ALREADY_MARRIED",
+      "FAKE_PROFILE",
+      "SPAM",
+      "INAPPROPRIATE_CONTENT",
+      "HARASSMENT",
+      "OTHER",
+    ])
+    .withMessage("Valid report type is required"),
+  body("reason")
+    .optional()
+    .isString()
+    .isLength({ max: 1000 })
+    .withMessage("Reason must be a string with max 1000 characters"),
+];
+
+// Review report validation
+const reviewReportValidation = [
+  body("status")
+    .notEmpty()
+    .isIn(["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "RESOLVED"])
+    .withMessage("Valid status is required"),
+  body("adminNotes")
+    .optional()
+    .isString()
+    .isLength({ max: 1000 })
+    .withMessage("Admin notes must be a string with max 1000 characters"),
+  body("adminAction")
+    .optional()
+    .isIn(["REFUND", "DEACTIVATE", "REMOVE", "WARNING", "NONE"])
+    .withMessage("Valid admin action is required"),
+];
+
 module.exports = {
   registerValidation,
   loginValidation,
@@ -299,4 +340,6 @@ module.exports = {
   addMoneyValidation,
   createOrderValidation,
   verifyPaymentValidation,
+  createReportValidation,
+  reviewReportValidation,
 };

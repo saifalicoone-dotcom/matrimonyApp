@@ -1,10 +1,15 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const http = require("http");
 const { PrismaClient } = require("@prisma/client");
+const { initializeSocket } = require("./src/services/socketService");
 
 const app = express();
 const prisma = new PrismaClient();
+
+// Create HTTP server
+const httpServer = http.createServer(app);
 
 // Middleware
 app.use(cors());
@@ -28,6 +33,7 @@ const shortlistRoutes = require("./src/routes/shortlistRoutes");
 const faceVerificationRoutes = require("./src/routes/faceVerificationRoutes");
 const walletRoutes = require("./src/routes/walletRoutes");
 const paymentRoutes = require("./src/routes/paymentRoutes");
+const reportRoutes = require("./src/routes/reportRoutes");
 
 // Basic route
 app.get("/", (req, res) => {
@@ -63,6 +69,7 @@ app.use("/api/shortlist", shortlistRoutes);
 app.use("/api/users/me/face-verification", faceVerificationRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/reports", reportRoutes);
 
 // Error handling middleware
 const {
@@ -74,8 +81,13 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+// Initialize Socket.io
+const io = initializeSocket(httpServer);
+
+// Start server
+httpServer.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log(`Socket.io server initialized`);
 });
 
 // Graceful shutdown

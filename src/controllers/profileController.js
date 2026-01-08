@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const { calculateAge, validateDateOfBirth, isValidEmail, isValidPhone, isValidHeight } = require('../utils/validation');
+const { hasProfileBoost, hasVerifiedBadge } = require('../services/subscriptionService');
 
 const prisma = new PrismaClient();
 
@@ -369,10 +370,23 @@ const getMyProfile = async (req, res, next) => {
       });
     }
 
+    // Add subscription-based features (Profile Boost & Verified Badge)
+    const profileBoost = await hasProfileBoost(userId);
+    const verifiedBadge = await hasVerifiedBadge(userId);
+
+    // Add to profile data
+    const profileData = {
+      ...profile,
+      subscriptionFeatures: {
+        profileBoost: profileBoost,
+        verifiedBadge: verifiedBadge,
+      },
+    };
+
     res.json({
       status: 'success',
       message: 'Profile retrieved successfully.',
-      data: { profile },
+      data: { profile: profileData },
     });
   } catch (error) {
     next(error);
@@ -450,6 +464,16 @@ const getUserProfile = async (req, res, next) => {
       delete profileData.email;
       delete profileData.phone;
     }
+
+    // Add subscription-based features (Profile Boost & Verified Badge)
+    const profileBoost = await hasProfileBoost(userId);
+    const verifiedBadge = await hasVerifiedBadge(userId);
+
+    // Add to profile data
+    profileData.subscriptionFeatures = {
+      profileBoost: profileBoost,
+      verifiedBadge: verifiedBadge,
+    };
 
     res.json({
       status: 'success',
