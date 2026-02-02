@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { setWithExpiry, getValue, deleteKey } = require('./redis');
 const prisma = new PrismaClient();
 
 /**
@@ -10,13 +11,24 @@ const generateOTP = () => {
 };
 
 /**
- * Save OTP to database
+ * Generate a unique key for OTP storage
+ * @param {String} phone - Phone number
+ * @param {String} purpose - Purpose of OTP (e.g., 'registration', 'login', 'verification')
+ * @returns {String} Unique key
+ */
+const generateOTPKey = (phone, purpose) => {
+  return `otp:${purpose}:${phone}`;
+};
+
+/**
+ * Save OTP to database and Redis cache
  * @param {String} phone - Phone number
  * @param {String} otp - OTP code
+ * @param {String} purpose - Purpose of OTP ('registration', 'login', 'verification')
  * @param {Number} expiryMinutes - Expiry time in minutes (default: 10)
  * @returns {Promise<Object>} OTP record
  */
-const saveOTP = async (phone, otp, expiryMinutes = 10) => {
+const saveOTP = async (phone, otp, purpose = 'verification', expiryMinutes = 10) => {
   // Delete old unused OTPs for this phone
   await prisma.otp.deleteMany({
     where: {
@@ -33,26 +45,69 @@ const saveOTP = async (phone, otp, expiryMinutes = 10) => {
     data: {
       phone,
       otp,
+      purpose,
       expiresAt,
       isUsed: false,
     },
   });
 
+  // Store in Redis cache as well
+  const otpKey = generateOTPKey(phone, purpose);
+  await setWithExpiry(otpKey, otp, expiryMinutes * 60); // Convert to seconds
+
   return otpRecord;
 };
 
 /**
- * Verify OTP
+ * Verify OTP from cache and database
  * @param {String} phone - Phone number
  * @param {String} otp - OTP code
+ * @param {String} purpose - Purpose of OTP ('registration', 'login', 'verification')
  * @returns {Promise<Boolean>} True if OTP is valid, false otherwise
  */
-const verifyOTP = async (phone, otp) => {
+const verifyOTP = async (phone, otp, purpose = 'verification') => {
+  // First check in Redis cache
+  const otpKey = generateOTPKey(phone, purpose);
+  const cachedOTP = await getValue(otpKey);
+  
+  if (cachedOTP === otp) {
+    // If found in cache, also verify in database and mark as used
+    const otpRecord = await prisma.otp.findFirst({
+      where: {
+        phone,
+        otp,
+        isUsed: false,
+        purpose,
+        expiresAt: {
+          gte: new Date(),
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    if (otpRecord) {
+      // Mark OTP as used in database
+      await prisma.otp.update({
+        where: { id: otpRecord.id },
+        data: { isUsed: true },
+      });
+      
+      // Remove from cache
+      await deleteKey(otpKey);
+      
+      return true;
+    }
+  }
+  
+  // If not in cache, fall back to database verification
   const otpRecord = await prisma.otp.findFirst({
     where: {
       phone,
       otp,
       isUsed: false,
+      purpose,
       expiresAt: {
         gte: new Date(),
       },
@@ -71,6 +126,9 @@ const verifyOTP = async (phone, otp) => {
     where: { id: otpRecord.id },
     data: { isUsed: true },
   });
+  
+  // Also remove from cache if it exists
+  await deleteKey(otpKey);
 
   return true;
 };
@@ -141,11 +199,12 @@ const sendOTP = async (phone, otp) => {
 /**
  * Generate and send OTP
  * @param {String} phone - Phone number
+ * @param {String} purpose - Purpose of OTP ('registration', 'login', 'verification')
  * @returns {Promise<String>} OTP code (for testing, remove in production)
  */
-const generateAndSendOTP = async (phone) => {
+const generateAndSendOTP = async (phone, purpose = 'verification') => {
   const otp = generateOTP();
-  await saveOTP(phone, otp);
+  await saveOTP(phone, otp, purpose);
 
   // Send OTP via SMS
   await sendOTP(phone, otp);

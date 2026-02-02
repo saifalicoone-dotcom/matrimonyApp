@@ -1,4 +1,11 @@
 const { PrismaClient } = require("@prisma/client");
+const {
+  cacheProfileList,
+  getCachedProfileList,
+  cacheRecommendations,
+  getCachedRecommendations,
+  generateParamsHash
+} = require('../utils/cache');
 
 const prisma = new PrismaClient();
 
@@ -48,6 +55,46 @@ const searchUsers = async (req, res, next) => {
       sortBy = "createdAt", // createdAt, lastActive, age
       order = "desc", // asc, desc
     } = req.query;
+    
+    // Create a hash of the parameters for caching
+    const paramsHash = generateParamsHash({
+      userId,
+      page,
+      limit,
+      ageMin,
+      ageMax,
+      gender,
+      heightMin,
+      heightMax,
+      maritalStatus,
+      country,
+      state,
+      city,
+      religion,
+      caste,
+      subCaste,
+      community,
+      motherTongue,
+      education,
+      occupation,
+      income,
+      diet,
+      smoking,
+      drinking,
+      sortBy,
+      order
+    });
+    
+    // Try to get from cache first
+    const cachedResults = await getCachedProfileList(paramsHash);
+    if (cachedResults) {
+      return res.json({
+        status: "success",
+        message: "Search results retrieved from cache.",
+        data: cachedResults,
+        fromCache: true
+      });
+    }
 
     // Get blocked users list
     const blockedUsers = await prisma.blockList.findMany({
@@ -236,21 +283,27 @@ const searchUsers = async (req, res, next) => {
 
     // Calculate total pages
     const totalPages = Math.ceil(totalCount / limitNum);
+    
+    // Prepare data for caching
+    const responseData = {
+      profiles: profilesData,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: totalCount,
+        totalPages,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1,
+      },
+    };
+    
+    // Cache the results
+    await cacheProfileList(paramsHash, responseData);
 
     res.json({
       status: "success",
       message: "Search results retrieved successfully.",
-      data: {
-        profiles: profilesData,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total: totalCount,
-          totalPages,
-          hasNextPage: pageNum < totalPages,
-          hasPrevPage: pageNum > 1,
-        },
-      },
+      data: responseData,
     });
   } catch (error) {
     next(error);
@@ -265,6 +318,17 @@ const getRecommendations = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const { page = 1, limit = 20 } = req.query;
+    
+    // Try to get from cache first
+    const cachedResults = await getCachedRecommendations(userId);
+    if (cachedResults) {
+      return res.json({
+        status: "success",
+        message: "Recommendations retrieved from cache.",
+        data: cachedResults,
+        fromCache: true
+      });
+    }
 
     // Get user's profile
     const userProfile = await prisma.profile.findUnique({
@@ -435,21 +499,27 @@ const getRecommendations = async (req, res, next) => {
 
     // Calculate total pages
     const totalPages = Math.ceil(totalCount / limitNum);
+    
+    // Prepare data for caching
+    const responseData = {
+      profiles: profilesData,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: totalCount,
+        totalPages,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1,
+      },
+    };
+    
+    // Cache the recommendations
+    await cacheRecommendations(userId, responseData);
 
     res.json({
       status: "success",
       message: "Recommendations retrieved successfully.",
-      data: {
-        profiles: profilesData,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total: totalCount,
-          totalPages,
-          hasNextPage: pageNum < totalPages,
-          hasPrevPage: pageNum > 1,
-        },
-      },
+      data: responseData,
     });
   } catch (error) {
     next(error);

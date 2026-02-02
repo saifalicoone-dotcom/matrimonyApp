@@ -1,0 +1,1949 @@
+{
+  "info": {
+    "_postman_id": "d4b4e07e-f8f6-4f46-bb47-1b5c7c5a3b7d",
+    "name": "Complete Matrimonial API Collection",
+    "description": "Complete API collection for the matrimonial application with all available endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register with OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register-otp",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register-otp"]
+            },
+            "description": "Initiate OTP-based registration"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\",\n  \"otp\": \"123456\",\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/complete-registration",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "complete-registration"]
+            },
+            "description": "Complete registration with OTP"
+          },
+          "response": []
+        },
+        {
+          "name": "Login with OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login-otp",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login-otp"]
+            },
+            "description": "Initiate OTP-based login"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/complete-login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "complete-login"]
+            },
+            "description": "Complete login with OTP"
+          },
+          "response": []
+        },
+        {
+          "name": "Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/send-otp",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "send-otp"]
+            },
+            "description": "Send OTP for phone verification"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/verify-otp",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "verify-otp"]
+            },
+            "description": "Verify OTP for phone verification"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "description": "Logout user (client-side token removal)"
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "refresh"]
+            },
+            "description": "Refresh access token using refresh token"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Profile Management",
+      "item": [
+        {
+          "name": "Create Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"gender\": \"MALE\",\n  \"height\": 175,\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"+919876543210\",\n  \"age\": 33,\n  \"numberOfChildren\": 0,\n  \"numberOfBrothers\": 1,\n  \"numberOfSisters\": 1,\n  \"marriedBrothers\": 0,\n  \"marriedSisters\": 0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "profile"]
+            },
+            "description": "Create user profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John Updated\",\n  \"lastName\": \"Doe\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"gender\": \"MALE\",\n  \"height\": 175,\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"+919876543210\",\n  \"age\": 33,\n  \"numberOfChildren\": 0,\n  \"numberOfBrothers\": 1,\n  \"numberOfSisters\": 1,\n  \"marriedBrothers\": 0,\n  \"marriedSisters\": 0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "profile"]
+            },
+            "description": "Update user profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "profile"]
+            },
+            "description": "Get my profile"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Photo Management",
+      "item": [
+        {
+          "name": "Upload Photo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me/photos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "photos"]
+            },
+            "description": "Upload a photo"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Photos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/photos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "photos"]
+            },
+            "description": "Get my photos"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Photo",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/photos/{{photo_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "photos", "{{photo_id}}"]
+            },
+            "description": "Delete a photo"
+          },
+          "response": []
+        },
+        {
+          "name": "Set Primary Photo",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/photos/{{photo_id}}/primary",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "photos", "{{photo_id}}", "primary"]
+            },
+            "description": "Set photo as primary"
+          },
+          "response": []
+        },
+        {
+          "name": "Reorder Photos",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"photoIds\": [\"{{photo_id_1}}\", \"{{photo_id_2}}\", \"{{photo_id_3}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me/photos/reorder",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "photos", "reorder"]
+            },
+            "description": "Reorder photos"
+          },
+          "response": []
+        },
+        {
+          "name": "Toggle Photo Privacy",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isPrivate\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me/photos/{{photo_id}}/privacy",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "photos", "{{photo_id}}", "privacy"]
+            },
+            "description": "Toggle photo privacy"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Photo Access Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/photos/access-requests",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "photos", "access-requests"]
+            },
+            "description": "Get photo access requests (sent/received)"
+          },
+          "response": []
+        },
+        {
+          "name": "Accept Photo Access Request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/photos/access-requests/{{request_id}}/accept",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "photos", "access-requests", "{{request_id}}", "accept"]
+            },
+            "description": "Accept photo access request"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Photo Access Request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/photos/access-requests/{{request_id}}/reject",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "photos", "access-requests", "{{request_id}}", "reject"]
+            },
+            "description": "Reject photo access request"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User Profiles",
+      "item": [
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{target_user_id}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{target_user_id}}", "profile"]
+            },
+            "description": "Get user profile by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Photos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{target_user_id}}/photos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{target_user_id}}", "photos"]
+            },
+            "description": "Get user photos (with privacy check)"
+          },
+          "response": []
+        },
+        {
+          "name": "Request Photo Access",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{target_user_id}}/photos/request-access",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{target_user_id}}", "photos", "request-access"]
+            },
+            "description": "Request access to private photos"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{target_user_id}}/contact",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{target_user_id}}", "contact"]
+            },
+            "description": "Get contact details of a user (only if interest sent and contact unlocked)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Search & Recommendations",
+      "item": [
+        {
+          "name": "Search Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/search/users?name=john&location=delhi&minAge=25&maxAge=35&page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "search", "users"],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "john"
+                },
+                {
+                  "key": "location",
+                  "value": "delhi"
+                },
+                {
+                  "key": "minAge",
+                  "value": "25"
+                },
+                {
+                  "key": "maxAge",
+                  "value": "35"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Search users with advanced filters"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Recommendations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/recommendations?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "recommendations"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get match recommendations based on user profile"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Interests",
+      "item": [
+        {
+          "name": "Send Interest",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toUserId\": \"{{target_user_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/interests",
+              "host": ["{{base_url}}"],
+              "path": ["api", "interests"]
+            },
+            "description": "Send interest to a user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Interests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/interests?type=sent&page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "interests"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "sent"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get my interests (sent/received)"
+          },
+          "response": []
+        },
+        {
+          "name": "Accept Interest",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/interests/{{interest_id}}/accept",
+              "host": ["{{base_url}}"],
+              "path": ["api", "interests", "{{interest_id}}", "accept"]
+            },
+            "description": "Accept an interest"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Interest",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/interests/{{interest_id}}/reject",
+              "host": ["{{base_url}}"],
+              "path": ["api", "interests", "{{interest_id}}", "reject"]
+            },
+            "description": "Reject an interest"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Chat & Messages",
+      "item": [
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toUserId\": \"{{target_user_id}}\",\n  \"content\": \"Hello, how are you?\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/messages",
+              "host": ["{{base_url}}"],
+              "path": ["api", "messages"]
+            },
+            "description": "Send a message"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Conversations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/messages/conversations?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "messages", "conversations"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get all conversations"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Messages with User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/messages/{{target_user_id}}?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "messages", "{{target_user_id}}"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get messages with a specific user"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Shortlist",
+      "item": [
+        {
+          "name": "Add to Shortlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shortlistedUserId\": \"{{target_user_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/shortlist",
+              "host": ["{{base_url}}"],
+              "path": ["api", "shortlist"]
+            },
+            "description": "Add profile to shortlist"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Shortlist",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/shortlist?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "shortlist"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get my shortlisted profiles"
+          },
+          "response": []
+        },
+        {
+          "name": "Remove from Shortlist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/shortlist/{{target_user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "shortlist", "{{target_user_id}}"]
+            },
+            "description": "Remove profile from shortlist"
+          },
+          "response": []
+        },
+        {
+          "name": "Check Shortlist Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/shortlist/{{target_user_id}}/check",
+              "host": ["{{base_url}}"],
+              "path": ["api", "shortlist", "{{target_user_id}}", "check"]
+            },
+            "description": "Check if profile is shortlisted"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Blocks",
+      "item": [
+        {
+          "name": "Block User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"blockedUserId\": \"{{target_user_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me/blocks",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "blocks"]
+            },
+            "description": "Block a user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Blocked Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/blocks?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "blocks"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get blocked users list"
+          },
+          "response": []
+        },
+        {
+          "name": "Unblock User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/blocks/{{blocked_user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "blocks", "{{blocked_user_id}}"]
+            },
+            "description": "Unblock a user"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/notifications?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "notifications"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get notifications"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/notifications/unread-count",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "notifications", "unread-count"]
+            },
+            "description": "Get unread notifications count"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/notifications/{{notification_id}}/read",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "notifications", "{{notification_id}}", "read"]
+            },
+            "description": "Mark notification as read"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/notifications/mark-all-read",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "notifications", "mark-all-read"]
+            },
+            "description": "Mark all notifications as read"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/notifications/{{notification_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "notifications", "{{notification_id}}"]
+            },
+            "description": "Delete notification"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "item": [
+        {
+          "name": "Get Account Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/settings",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "settings"]
+            },
+            "description": "Get account settings"
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"old_password\",\n  \"newPassword\": \"new_password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me/password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "password"]
+            },
+            "description": "Change password"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Email",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"new_email@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me/email",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "email"]
+            },
+            "description": "Update email"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Phone",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543211\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me/phone",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "phone"]
+            },
+            "description": "Update phone"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Privacy Settings",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showOnlineStatus\": true,\n  \"allowPhotoRequests\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me/privacy",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "privacy"]
+            },
+            "description": "Update privacy settings"
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Account",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/deactivate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "deactivate"]
+            },
+            "description": "Deactivate account"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me"]
+            },
+            "description": "Delete account"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Face Verification",
+      "item": [
+        {
+          "name": "Store Face Encoding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"faceEncoding\": [0.1, 0.2, 0.3, 0.4, 0.5],\n  \"photoId\": \"{{photo_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me/face-verification/store",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "face-verification", "store"]
+            },
+            "description": "Store face encoding from profile photo"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Face",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"faceEncoding\": [0.1, 0.2, 0.3, 0.4, 0.5]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me/face-verification/verify",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "face-verification", "verify"]
+            },
+            "description": "Verify face with live capture"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Face Verification Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/face-verification/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "face-verification", "status"]
+            },
+            "description": "Get face verification status"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Face Verification",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me/face-verification/reset",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "face-verification", "reset"]
+            },
+            "description": "Reset face verification"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        {
+          "name": "Get Wallet",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/wallet",
+              "host": ["{{base_url}}"],
+              "path": ["api", "wallet"]
+            },
+            "description": "Get wallet balance"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Money to Wallet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/wallet/add-money",
+              "host": ["{{base_url}}"],
+              "path": ["api", "wallet", "add-money"]
+            },
+            "description": "Add money to wallet (mock payment)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Transaction History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/transactions?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "wallet", "transactions"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get wallet transaction history"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Transaction Receipt",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/transactions/{{transaction_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "wallet", "transactions", "{{transaction_id}}"]
+            },
+            "description": "Get transaction receipt"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Create Payment Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/payments/create-order",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments", "create-order"]
+            },
+            "description": "Create Razorpay payment order"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_order_id\": \"order_abc123\",\n  \"razorpay_payment_id\": \"pay_def456\",\n  \"razorpay_signature\": \"signature_here\",\n  \"transactionId\": \"{{transaction_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/payments/verify",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments", "verify"]
+            },
+            "description": "Verify payment and update wallet"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/payments/status/{{transaction_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments", "status", "{{transaction_id}}"]
+            },
+            "description": "Get payment status"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "Get Subscription Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/plans",
+              "host": ["{{base_url}}"],
+              "path": ["api", "subscriptions", "plans"]
+            },
+            "description": "Get available subscription plans"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Subscription",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/my-subscription",
+              "host": ["{{base_url}}"],
+              "path": ["api", "subscriptions", "my-subscription"]
+            },
+            "description": "Get current active subscription"
+          },
+          "response": []
+        },
+        {
+          "name": "Purchase Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planType\": \"BASIC\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/purchase",
+              "host": ["{{base_url}}"],
+              "path": ["api", "subscriptions", "purchase"]
+            },
+            "description": "Create subscription order (buy subscription)"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Subscription Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_order_id\": \"order_abc123\",\n  \"razorpay_payment_id\": \"pay_def456\",\n  \"razorpay_signature\": \"signature_here\",\n  \"subscriptionId\": \"{{subscription_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/verify",
+              "host": ["{{base_url}}"],
+              "path": ["api", "subscriptions", "verify"]
+            },
+            "description": "Verify subscription payment and activate subscription"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Subscription History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/history?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "subscriptions", "history"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get subscription history"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Create Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reportedUserId\": \"{{target_user_id}}\",\n  \"type\": \"FAKE_PROFILE\",\n  \"reason\": \"Profile seems fake\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reports",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reports"]
+            },
+            "description": "Create a report"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/reports/my-reports?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reports", "my-reports"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get my submitted reports"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Reports (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/reports/admin?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reports", "admin"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get all reports (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Report By ID (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/reports/{{report_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reports", "{{report_id}}"]
+            },
+            "description": "Get report by ID (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Review Report (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\",\n  \"adminNotes\": \"Report approved\",\n  \"adminAction\": \"WARNING\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reports/{{report_id}}/review",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reports", "{{report_id}}", "review"]
+            },
+            "description": "Review report and take action (Admin only)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health Checks",
+      "item": [
+        {
+          "name": "Basic Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Basic health check"
+          },
+          "response": []
+        },
+        {
+          "name": "Detailed Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health/detail",
+              "host": ["{{base_url}}"],
+              "path": ["health", "detail"]
+            },
+            "description": "Detailed health check"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Root Endpoint",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": ["{{base_url}}"],
+          "path": [""]
+        },
+        "description": "Root endpoint"
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "target_user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "interest_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "photo_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "request_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "blocked_user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "notification_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "transaction_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "subscription_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "report_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

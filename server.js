@@ -4,6 +4,8 @@ const cors = require("cors");
 const http = require("http");
 const { PrismaClient } = require("@prisma/client");
 const { initializeSocket } = require("./src/services/socketService");
+const { initRedis } = require("./src/utils/redis");
+const { validateEnvironmentVariables } = require("./src/utils/envValidator");
 
 const app = express();
 const prisma = new PrismaClient();
@@ -45,13 +47,14 @@ app.get("/", (req, res) => {
   });
 });
 
+// Import health controller
+const { healthCheck, detailedHealthCheck } = require('./src/controllers/healthController');
+
 // Health check route
-app.get("/health", (req, res) => {
-  res.json({
-    status: "success",
-    message: "Server is healthy",
-  });
-});
+app.get("/health", healthCheck);
+
+// Detailed health check route
+app.get("/health/detail", detailedHealthCheck);
 
 // API Routes
 app.use("/api/auth", authRoutes);
@@ -86,11 +89,44 @@ const PORT = process.env.PORT || 3000;
 // Initialize Socket.io
 const io = initializeSocket(httpServer);
 
-// Start server
-httpServer.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Socket.io server initialized`);
-});
+// Initialize Redis
+const initializeApp = async () => {
+  try {
+    // Validate environment variables first
+    validateEnvironmentVariables();
+    
+    // Initialize Redis connection (non-blocking - server continues if Redis unavailable)
+    const redisClient = await initRedis();
+    
+    if (redisClient) {
+      console.log('Redis connected successfully');
+    } else {
+      console.warn('Redis unavailable - running with degraded functionality');
+    }
+    
+    // Start server with error handling
+    httpServer.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use. Please stop the existing server process first.`);
+        console.error('Run: taskkill /IM node.exe /F  (on Windows)');
+        process.exit(1);
+      } else {
+        console.error('Server error:', error);
+        process.exit(1);
+      }
+    });
+    
+    httpServer.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+      console.log(`Socket.io server initialized`);
+    });
+  } catch (error) {
+    console.error('Failed to initialize application:', error);
+    process.exit(1);
+  }
+};
+
+initializeApp();
 
 // Graceful shutdown
 process.on("SIGINT", async () => {

@@ -1,71 +1,170 @@
 const bcrypt = require("bcrypt");
 const { PrismaClient } = require("@prisma/client");
 const { generateToken, generateRefreshToken } = require("../utils/jwt");
+const { generateAndSendOTP, verifyOTP: verifyOTPUtil } = require("../utils/otp");
+const { checkRateLimit, isPhoneBlocked, blockPhone, unblockPhone } = require("../utils/rateLimiter");
 
 const prisma = new PrismaClient();
 
 /**
- * User Registration
- * POST /api/auth/register
+ * OTP-based User Registration
+ * POST /api/auth/register-otp
  */
-const register = async (req, res, next) => {
+const registerWithOTP = async (req, res, next) => {
   try {
-    const { email, phone, password } = req.body;
+    const { phone } = req.body;
 
     // Validation
-    if (!email || !password) {
+    if (!phone) {
       return res.status(400).json({
         status: "error",
-        message: "Email and password are required.",
-        error: "Email and password fields are mandatory.",
+        message: "Phone number is required.",
+        error: "Phone field is mandatory for registration.",
       });
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    // Validate phone format
+    const phoneRegex =
+      /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
+    if (!phoneRegex.test(phone)) {
       return res.status(400).json({
         status: "error",
-        message: "Invalid email format.",
-        error: "Please provide a valid email address.",
+        message: "Invalid phone number format.",
+        error: "Please provide a valid phone number.",
       });
     }
 
-    // Validate password length (minimum 6 characters)
-    if (password.length < 6) {
-      return res.status(400).json({
+    // Check if phone is blocked
+    const isBlocked = await isPhoneBlocked(phone);
+    if (isBlocked) {
+      return res.status(429).json({
         status: "error",
-        message: "Password must be at least 6 characters long.",
-        error: "Password validation failed.",
+        message: "Too many failed attempts. Please try again later.",
+        error: "Phone number is temporarily blocked.",
       });
     }
 
-    // Validate phone format if provided
-    if (phone) {
-      const phoneRegex =
-        /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
-      if (!phoneRegex.test(phone)) {
+    // Check rate limit
+    const rateLimitResult = await checkRateLimit(phone, 'register-otp', 5, 300); // 5 attempts per 5 minutes
+    if (!rateLimitResult.allowed) {
+      return res.status(429).json({
+        status: "error",
+        message: `Too many OTP requests. Please try again after ${Math.ceil((rateLimitResult.resetTime - Math.floor(Date.now() / 1000)) / 60)} minutes.`,
+        error: "Rate limit exceeded.",
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { phone },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        status: "error",
+        message: "User with this phone number already exists.",
+        error: "Phone number must be unique.",
+      });
+    }
+
+    // Generate and send OTP for registration
+    const otp = await generateAndSendOTP(phone, 'registration');
+
+    res.json({
+      status: "success",
+      message: "OTP sent successfully for registration.",
+      data: {
+        phone,
+        ...(process.env.NODE_ENV === "development" ? { otp } : {}), // Only return OTP in development
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Complete Registration with OTP
+ * POST /api/auth/complete-registration
+ */
+const completeRegistration = async (req, res, next) => {
+  try {
+    const { phone, otp, email } = req.body;
+
+    // Validation
+    if (!phone || !otp) {
+      return res.status(400).json({
+        status: "error",
+        message: "Phone number and OTP are required.",
+        error: "Phone and OTP fields are mandatory.",
+      });
+    }
+
+    // Check if phone is blocked
+    const isBlocked = await isPhoneBlocked(phone);
+    if (isBlocked) {
+      return res.status(429).json({
+        status: "error",
+        message: "Too many failed attempts. Please try again later.",
+        error: "Phone number is temporarily blocked.",
+      });
+    }
+
+    // Verify OTP for registration
+    const isValid = await verifyOTPUtil(phone, otp, 'registration');
+
+    if (!isValid) {
+      // Increment failed attempts counter
+      const rateLimitResult = await checkRateLimit(phone, 'failed-register-otp', 5, 3600); // 5 failed attempts per hour
+      if (!rateLimitResult.allowed) {
+        // Block phone for 1 hour if too many failed attempts
+        await blockPhone(phone, 3600);
+      }
+      
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid or expired OTP.",
+        error: "Please request a new OTP.",
+      });
+    }
+
+    // Reset failed attempts counter on successful OTP verification
+    await unblockPhone(phone);
+
+    // Validate email if provided
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
         return res.status(400).json({
           status: "error",
-          message: "Invalid phone number format.",
-          error: "Please provide a valid phone number.",
+          message: "Invalid email format.",
+          error: "Please provide a valid email address.",
         });
       }
     }
 
-    // Hash password
-    const saltRounds = 10;
-    const passwordHash = await bcrypt.hash(password, saltRounds);
+    // Check if user already exists (double-check after OTP verification)
+    const existingUser = await prisma.user.findUnique({
+      where: { phone },
+    });
 
-    // Create user
+    if (existingUser) {
+      return res.status(409).json({
+        status: "error",
+        message: "User with this phone number already exists.",
+        error: "Phone number must be unique.",
+      });
+    }
+
+    // Create user with phone verified
     const user = await prisma.user.create({
       data: {
-        email,
-        phone: phone || null,
-        passwordHash,
+        email: email || null,
+        phone,
+        passwordHash: null, // No password for OTP-based registration
         role: "USER",
-        isEmailVerified: false,
-        isPhoneVerified: false,
+        isEmailVerified: !!email,
+        isPhoneVerified: true,
         isActive: true,
       },
       select: {
@@ -97,7 +196,7 @@ const register = async (req, res, next) => {
       },
     });
   } catch (error) {
-    // Handle unique constraint violations (duplicate email/phone)
+    // Handle unique constraint violations (duplicate email)
     if (error.code === "P2002") {
       const field = error.meta?.target?.[0] || "field";
       return res.status(409).json({
@@ -115,41 +214,72 @@ const register = async (req, res, next) => {
 };
 
 /**
- * User Login
- * POST /api/auth/login
- * Supports login with email or phone number
+ * OTP-based User Login
+ * POST /api/auth/login-otp
  */
-const login = async (req, res, next) => {
+const loginWithOTP = async (req, res, next) => {
   try {
-    const { email, phone, password } = req.body;
+    const { phone } = req.body;
 
-    // Validation - either email or phone required
-    if ((!email && !phone) || !password) {
+    // Validation
+    if (!phone) {
       return res.status(400).json({
         status: "error",
-        message: "Email/phone and password are required.",
-        error: "Email/phone and password fields are mandatory.",
+        message: "Phone number is required.",
+        error: "Phone field is mandatory for login.",
       });
     }
 
-    let user;
-
-    // Find user by email or phone
-    if (email) {
-      user = await prisma.user.findUnique({
-        where: { email },
-      });
-    } else if (phone) {
-      user = await prisma.user.findUnique({
-        where: { phone },
+    // Validate phone format
+    const phoneRegex =
+      /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid phone number format.",
+        error: "Please provide a valid phone number.",
       });
     }
+
+    // Check if phone is blocked
+    const isBlocked = await isPhoneBlocked(phone);
+    if (isBlocked) {
+      return res.status(429).json({
+        status: "error",
+        message: "Too many failed attempts. Please try again later.",
+        error: "Phone number is temporarily blocked.",
+      });
+    }
+
+    // Check rate limit
+    const rateLimitResult = await checkRateLimit(phone, 'login-otp', 5, 300); // 5 attempts per 5 minutes
+    if (!rateLimitResult.allowed) {
+      return res.status(429).json({
+        status: "error",
+        message: `Too many OTP requests. Please try again after ${Math.ceil((rateLimitResult.resetTime - Math.floor(Date.now() / 1000)) / 60)} minutes.`,
+        error: "Rate limit exceeded.",
+      });
+    }
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { phone },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        role: true,
+        isEmailVerified: true,
+        isPhoneVerified: true,
+        isActive: true,
+      },
+    });
 
     if (!user) {
-      return res.status(401).json({
+      return res.status(404).json({
         status: "error",
-        message: "Invalid credentials.",
-        error: "Authentication failed.",
+        message: "User not found. Please register first.",
+        error: "Account does not exist.",
       });
     }
 
@@ -162,14 +292,100 @@ const login = async (req, res, next) => {
       });
     }
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    // Generate and send OTP for login
+    const otp = await generateAndSendOTP(phone, 'login');
 
-    if (!isPasswordValid) {
+    res.json({
+      status: "success",
+      message: "OTP sent successfully for login.",
+      data: {
+        userId: user.id,
+        phone: user.phone,
+        ...(process.env.NODE_ENV === "development" ? { otp } : {}), // Only return OTP in development
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Complete Login with OTP
+ * POST /api/auth/complete-login
+ */
+const completeLogin = async (req, res, next) => {
+  try {
+    const { phone, otp } = req.body;
+
+    // Validation
+    if (!phone || !otp) {
+      return res.status(400).json({
+        status: "error",
+        message: "Phone number and OTP are required.",
+        error: "Phone and OTP fields are mandatory.",
+      });
+    }
+
+    // Check if phone is blocked
+    const isBlocked = await isPhoneBlocked(phone);
+    if (isBlocked) {
+      return res.status(429).json({
+        status: "error",
+        message: "Too many failed attempts. Please try again later.",
+        error: "Phone number is temporarily blocked.",
+      });
+    }
+
+    // Verify OTP for login
+    const isValid = await verifyOTPUtil(phone, otp, 'login');
+
+    if (!isValid) {
+      // Increment failed attempts counter
+      const rateLimitResult = await checkRateLimit(phone, 'failed-login-otp', 5, 3600); // 5 failed attempts per hour
+      if (!rateLimitResult.allowed) {
+        // Block phone for 1 hour if too many failed attempts
+        await blockPhone(phone, 3600);
+      }
+      
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid or expired OTP.",
+        error: "Please request a new OTP.",
+      });
+    }
+
+    // Reset failed attempts counter on successful OTP verification
+    await unblockPhone(phone);
+
+    // Find user by phone
+    const user = await prisma.user.findUnique({
+      where: { phone },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        role: true,
+        isEmailVerified: true,
+        isPhoneVerified: true,
+        isActive: true,
+        lastActive: true,
+      },
+    });
+
+    if (!user) {
       return res.status(401).json({
         status: "error",
-        message: "Invalid credentials.",
+        message: "User not found.",
         error: "Authentication failed.",
+      });
+    }
+
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(403).json({
+        status: "error",
+        message: "Account is inactive. Please contact support.",
+        error: "Account has been deactivated.",
       });
     }
 
@@ -187,7 +403,7 @@ const login = async (req, res, next) => {
     });
     const refreshToken = generateRefreshToken({ userId: user.id });
 
-    // Return user data (excluding password hash)
+    // Return user data
     const userData = {
       id: user.id,
       email: user.email,
@@ -238,6 +454,69 @@ const logout = async (req, res, next) => {
  * Refresh Access Token
  * POST /api/auth/refresh
  */
+/**
+ * Send OTP for phone verification
+ * POST /api/auth/send-otp
+ */
+const sendOTP = async (req, res, next) => {
+  try {
+    const { phone } = req.body;
+
+    // Validation
+    if (!phone) {
+      return res.status(400).json({
+        status: "error",
+        message: "Phone number is required.",
+        error: "Phone field is mandatory.",
+      });
+    }
+
+    // Validate phone format
+    const phoneRegex =
+      /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid phone number format.",
+        error: "Please provide a valid phone number.",
+      });
+    }
+
+    // Check if phone is blocked
+    const isBlocked = await isPhoneBlocked(phone);
+    if (isBlocked) {
+      return res.status(429).json({
+        status: "error",
+        message: "Too many failed attempts. Please try again later.",
+        error: "Phone number is temporarily blocked.",
+      });
+    }
+
+    // Check rate limit
+    const rateLimitResult = await checkRateLimit(phone, 'send-otp', 5, 300); // 5 attempts per 5 minutes
+    if (!rateLimitResult.allowed) {
+      return res.status(429).json({
+        status: "error",
+        message: `Too many OTP requests. Please try again after ${Math.ceil((rateLimitResult.resetTime - Math.floor(Date.now() / 1000)) / 60)} minutes.`,
+        error: "Rate limit exceeded.",
+      });
+    }
+
+    const { generateAndSendOTP } = require("../utils/otp");
+
+    // Generate and send OTP
+    const otp = await generateAndSendOTP(phone, 'verification');
+
+    res.json({
+      status: "success",
+      message: "OTP sent successfully to your phone.",
+      data: process.env.NODE_ENV === "development" ? { otp } : {}, // Only return OTP in development
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const refreshToken = async (req, res, next) => {
   try {
     const { refreshToken: token } = req.body;
@@ -298,49 +577,6 @@ const refreshToken = async (req, res, next) => {
 };
 
 /**
- * Send OTP for phone verification
- * POST /api/auth/send-otp
- */
-const sendOTP = async (req, res, next) => {
-  try {
-    const { phone } = req.body;
-
-    // Validation
-    if (!phone) {
-      return res.status(400).json({
-        status: "error",
-        message: "Phone number is required.",
-        error: "Phone field is mandatory.",
-      });
-    }
-
-    // Validate phone format
-    const phoneRegex =
-      /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
-    if (!phoneRegex.test(phone)) {
-      return res.status(400).json({
-        status: "error",
-        message: "Invalid phone number format.",
-        error: "Please provide a valid phone number.",
-      });
-    }
-
-    const { generateAndSendOTP } = require("../utils/otp");
-
-    // Generate and send OTP
-    const otp = await generateAndSendOTP(phone);
-
-    res.json({
-      status: "success",
-      message: "OTP sent successfully to your phone.",
-      data: process.env.NODE_ENV === "development" ? { otp } : {}, // Only return OTP in development
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
  * Verify OTP for phone verification
  * POST /api/auth/verify-otp
  */
@@ -357,18 +593,47 @@ const verifyOTP = async (req, res, next) => {
       });
     }
 
-    const { verifyOTP } = require("../utils/otp");
+    // Validate phone format
+    const phoneRegex =
+      /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid phone number format.",
+        error: "Please provide a valid phone number.",
+      });
+    }
+
+    // Check if phone is blocked
+    const isBlocked = await isPhoneBlocked(phone);
+    if (isBlocked) {
+      return res.status(429).json({
+        status: "error",
+        message: "Too many failed attempts. Please try again later.",
+        error: "Phone number is temporarily blocked.",
+      });
+    }
 
     // Verify OTP
-    const isValid = await verifyOTP(phone, otp);
+    const isValid = await verifyOTPUtil(phone, otp, 'verification');
 
     if (!isValid) {
+      // Increment failed attempts counter
+      const rateLimitResult = await checkRateLimit(phone, 'failed-verify-otp', 5, 3600); // 5 failed attempts per hour
+      if (!rateLimitResult.allowed) {
+        // Block phone for 1 hour if too many failed attempts
+        await blockPhone(phone, 3600);
+      }
+      
       return res.status(400).json({
         status: "error",
         message: "Invalid or expired OTP.",
         error: "Please request a new OTP.",
       });
     }
+
+    // Reset failed attempts counter on successful OTP verification
+    await unblockPhone(phone);
 
     // Find user by phone and update phone verification status
     const user = await prisma.user.findUnique({
@@ -407,8 +672,10 @@ const verifyOTP = async (req, res, next) => {
 };
 
 module.exports = {
-  register,
-  login,
+  registerWithOTP,
+  completeRegistration,
+  loginWithOTP,
+  completeLogin,
   logout,
   refreshToken,
   sendOTP,

@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { authenticate } = require("../middleware/auth");
 
 const prisma = new PrismaClient();
 
@@ -189,10 +190,131 @@ const deductMoney = async (userId, amount, description, referenceId, referenceTy
   });
 };
 
+/**
+ * Get Wallet Transaction History
+ * GET /api/wallet/transactions
+ */
+const getTransactionHistory = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { page = 1, limit = 20, type = null } = req.query;
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get wallet first
+    const wallet = await prisma.wallet.findUnique({
+      where: { userId },
+    });
+
+    if (!wallet) {
+      return res.status(404).json({
+        status: "error",
+        message: "Wallet not found.",
+        error: "Wallet does not exist.",
+      });
+    }
+
+    // Build where clause
+    let where = { walletId: wallet.id };
+    if (type && ["CREDIT", "DEBIT"].includes(type.toUpperCase())) {
+      where.type = type.toUpperCase();
+    }
+
+    // Get total count
+    const totalCount = await prisma.walletTransaction.count({ where });
+
+    // Get transactions
+    const transactions = await prisma.walletTransaction.findMany({
+      where,
+      skip,
+      take: limitNum,
+      orderBy: { createdAt: "desc" },
+    });
+
+    const totalPages = Math.ceil(totalCount / limitNum);
+
+    res.json({
+      status: "success",
+      message: "Transaction history retrieved successfully.",
+      data: {
+        transactions,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: totalCount,
+          totalPages,
+          hasNextPage: pageNum < totalPages,
+          hasPrevPage: pageNum > 1,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get Transaction Receipt
+ * GET /api/wallet/transactions/:transactionId
+ */
+const getTransactionReceipt = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { transactionId } = req.params;
+
+    // Get wallet
+    const wallet = await prisma.wallet.findUnique({
+      where: { userId },
+    });
+
+    if (!wallet) {
+      return res.status(404).json({
+        status: "error",
+        message: "Wallet not found.",
+        error: "Wallet does not exist.",
+      });
+    }
+
+    // Get transaction
+    const transaction = await prisma.walletTransaction.findUnique({
+      where: { id: transactionId },
+    });
+
+    if (!transaction) {
+      return res.status(404).json({
+        status: "error",
+        message: "Transaction not found.",
+        error: "Invalid transaction ID.",
+      });
+    }
+
+    // Verify transaction belongs to user
+    if (transaction.walletId !== wallet.id) {
+      return res.status(403).json({
+        status: "error",
+        message: "Unauthorized access.",
+        error: "Transaction does not belong to user.",
+      });
+    }
+
+    res.json({
+      status: "success",
+      message: "Transaction receipt retrieved successfully.",
+      data: { transaction },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getWallet,
   addMoney,
   deductMoney,
+  getTransactionHistory,
+  getTransactionReceipt,
   INTEREST_FEE,
 };
 

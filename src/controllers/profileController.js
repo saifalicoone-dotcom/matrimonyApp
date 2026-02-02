@@ -1,6 +1,14 @@
 const { PrismaClient } = require('@prisma/client');
 const { calculateAge, validateDateOfBirth, isValidEmail, isValidPhone, isValidHeight } = require('../utils/validation');
 const { hasProfileBoost, hasVerifiedBadge } = require('../services/subscriptionService');
+const {
+  cacheUserProfile,
+  getCachedUserProfile,
+  invalidateUserProfileCache,
+  setProfileVisibility,
+  getProfileVisibility,
+  clearUserRelatedCaches
+} = require('../utils/cache');
 
 const prisma = new PrismaClient();
 
@@ -346,6 +354,17 @@ const createOrUpdateProfile = async (req, res, next) => {
 const getMyProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
+    
+    // Try to get from cache first
+    const cachedProfile = await getCachedUserProfile(userId);
+    if (cachedProfile) {
+      return res.json({
+        status: 'success',
+        message: 'Profile retrieved from cache.',
+        data: { profile: cachedProfile },
+        fromCache: true
+      });
+    }
 
     const profile = await prisma.profile.findUnique({
       where: { userId },
@@ -382,6 +401,9 @@ const getMyProfile = async (req, res, next) => {
         verifiedBadge: verifiedBadge,
       },
     };
+    
+    // Cache the profile for future requests
+    await cacheUserProfile(userId, profileData);
 
     res.json({
       status: 'success',
@@ -401,7 +423,7 @@ const getUserProfile = async (req, res, next) => {
   try {
     const { userId } = req.params;
     const viewerId = req.user.id;
-
+    
     // Check if user is blocked or blocking
     const isBlocked = await prisma.blockList.findFirst({
       where: {
@@ -417,6 +439,42 @@ const getUserProfile = async (req, res, next) => {
         status: 'error',
         message: 'Access denied.',
         error: 'Profile not accessible.',
+      });
+    }
+    
+    // Try to get from cache first
+    const cachedProfile = await getCachedUserProfile(userId);
+    if (cachedProfile) {
+      // Still need to check visibility and permissions for each viewer
+      // Check profile visibility
+      if (!cachedProfile.profileVisible && cachedProfile.userId !== viewerId) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Profile is private.',
+          error: 'Access denied.',
+        });
+      }
+      
+      // Hide contact info if withContact is false or viewer is not PREMIUM
+      const viewer = await prisma.user.findUnique({
+        where: { id: viewerId },
+        select: { role: true },
+      });
+      
+      const shouldHideContact = !cachedProfile.withContact || viewer.role !== 'PREMIUM';
+      
+      // Remove sensitive fields if needed
+      const profileData = { ...cachedProfile };
+      if (shouldHideContact && cachedProfile.userId !== viewerId) {
+        delete profileData.email;
+        delete profileData.phone;
+      }
+      
+      return res.json({
+        status: 'success',
+        message: 'Profile retrieved from cache.',
+        data: { profile: profileData },
+        fromCache: true
       });
     }
 
@@ -474,6 +532,9 @@ const getUserProfile = async (req, res, next) => {
       profileBoost: profileBoost,
       verifiedBadge: verifiedBadge,
     };
+    
+    // Cache the profile for future requests
+    await cacheUserProfile(userId, profileData);
 
     res.json({
       status: 'success',

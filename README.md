@@ -8,9 +8,11 @@ Node.js + Express backend for Matrimonial Web Application using Prisma ORM with 
 - **Framework:** Express.js
 - **ORM:** Prisma
 - **Database:** PostgreSQL
-- **Authentication:** JWT (jsonwebtoken)
+- **Authentication:** JWT (jsonwebtoken) with OTP-based authentication
 - **Password Hashing:** bcrypt
 - **File Storage:** Cloudflare R2
+- **Caching:** Redis for OTP and session management
+- **SMS:** OTP delivery via multiple providers
 
 ## Setup Instructions
 
@@ -100,6 +102,24 @@ Server will run on `http://localhost:3000` (or PORT specified in .env)
 └── README.md                  # This file
 ```
 
+## Features
+
+- OTP-based authentication (register, login with phone OTP)
+- Traditional authentication (email/password as fallback)
+- Profile management
+- Photo upload and management
+- Interest system (sending/receiving interests)
+- Chat functionality
+- Search and recommendation system
+- Subscription management
+- Wallet and payment integration
+- Face verification
+- Reporting system
+- Admin panel
+- Redis caching for improved performance
+- Rate limiting for security
+- Comprehensive health monitoring
+
 ## Database Schema
 
 The schema includes the following models:
@@ -112,6 +132,7 @@ The schema includes the following models:
 - **Subscription** - Premium subscriptions
 - **BlockList** - Blocked users
 - **Notification** - User notifications
+- **OTP** - One-time passwords for verification
 
 ## API Endpoints
 

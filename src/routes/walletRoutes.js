@@ -6,6 +6,7 @@ const {
   addMoneyValidation,
 } = require("../middleware/validationSchemas");
 const validateRequest = require("../middleware/validateRequest");
+const { paginationValidation, uuidParamValidation } = require("../middleware/validationSchemas");
 
 /**
  * @route   GET /api/wallet
@@ -31,5 +32,33 @@ router.post(
   walletController.addMoney
 );
 
+/**
+ * @route   GET /api/wallet/transactions
+ * @desc    Get wallet transaction history
+ * @access  Protected
+ */
+router.get(
+  "/transactions",
+  authenticate,
+  paginationValidation,
+  validateRequest,
+  walletController.getTransactionHistory
+);
+
+/**
+ * @route   GET /api/wallet/transactions/:transactionId
+ * @desc    Get transaction receipt
+ * @access  Protected
+ */
+router.get(
+  "/transactions/:transactionId",
+  authenticate,
+  uuidParamValidation("transactionId"),
+  validateRequest,
+  walletController.getTransactionReceipt
+);
+
 module.exports = router;
+
+
 

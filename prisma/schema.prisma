@@ -51,9 +51,9 @@ enum Diet {
 // User Model - Authentication and Basic Info
 model User {
   id              String   @id @default(uuid())
-  email           String   @unique
-  phone           String?  @unique
-  passwordHash    String
+  email           String?  @unique
+  phone           String   @unique
+  passwordHash    String?
   role            Role     @default(USER)
   isEmailVerified Boolean  @default(false)
   isPhoneVerified Boolean  @default(false)
@@ -288,11 +288,13 @@ model Otp {
   id        String   @id @default(uuid())
   phone     String
   otp       String // 6-digit OTP
+  purpose   String   @default("verification") // 'registration', 'login', 'verification'
   expiresAt DateTime
   isUsed    Boolean  @default(false)
   createdAt DateTime @default(now())
 
   @@index([phone, isUsed])
+  @@index([purpose])
   @@map("otps")
 }
 

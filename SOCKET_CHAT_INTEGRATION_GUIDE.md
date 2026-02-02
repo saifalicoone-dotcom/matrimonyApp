@@ -334,3 +334,5 @@ CLIENT_URL=http://localhost:3000  # Frontend URL for CORS
 - Online/offline status is tracked
 - Blocked users cannot chat with each other
 
+
+

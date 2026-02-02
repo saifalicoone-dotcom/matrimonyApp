@@ -9,7 +9,13 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:push": "prisma db push"
+    "prisma:push": "prisma db push",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:db:migrate": "docker-compose exec backend npm run prisma:migrate",
+    "docker:db:studio": "docker-compose exec backend npm run prisma:studio"
   },
   "keywords": [
     "matrimonial",
@@ -23,6 +29,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.962.0",
     "@prisma/client": "^5.22.0",
+    "axios": "^1.13.4",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
@@ -32,6 +39,7 @@
     "multer": "^1.4.5-lts.1",
     "prisma": "^5.22.0",
     "razorpay": "^2.9.6",
+    "redis": "^4.7.1",
     "socket.io": "^4.8.3",
     "uuid": "^9.0.1"
   },
