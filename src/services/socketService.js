@@ -34,7 +34,7 @@ const initializeSocket = (httpServer) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await prisma.user.findUnique({
         where: { id: decoded.id },
-        select: { id: true, email: true, isActive: true },
+        select: { id: true, isActive: true },
       });
 
       if (!user || !user.isActive) {
@@ -42,7 +42,6 @@ const initializeSocket = (httpServer) => {
       }
 
       socket.userId = user.id;
-      socket.userEmail = user.email;
       next();
     } catch (error) {
       next(new Error("Authentication failed"));
@@ -85,13 +84,41 @@ const initializeSocket = (httpServer) => {
           return;
         }
 
-        // Check subscription and chat limits
-        const chatCheck = await canChatWithUser(userId, targetUserId);
+        // Check chat access based on interest rules (asymmetric access)
+        // User A can join chat with User B if User A sent interest to User B
+        // User B can join chat with User A only if User B accepted User A's interest
+        
+        // Check if user A (sender) sent interest to user B (recipient)
+        const outgoingInterest = await prisma.interest.findFirst({
+          where: {
+            fromUserId: userId,
+            toUserId: targetUserId,
+          },
+        });
 
-        if (!chatCheck.canChat) {
+        // Check if user B (recipient) sent interest to user A (sender) and accepted it
+        const incomingInterest = await prisma.interest.findFirst({
+          where: {
+            fromUserId: targetUserId,
+            toUserId: userId,
+            status: "ACCEPTED",
+          },
+        });
+
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { role: true },
+        });
+
+        // Chat access rules:
+        // 1. User A can join chat with User B if User A sent interest (regardless of acceptance status)
+        // 2. User B can join chat with User A only if User B accepted User A's interest
+        const canAccessChat = outgoingInterest || user.role !== "USER" || incomingInterest;
+
+        if (!canAccessChat) {
           socket.emit("error", {
-            message: chatCheck.reason || "Chat not allowed",
-            code: "CHAT_NOT_ALLOWED",
+            message: "You need to send interest first to enable chat access. Upgrade to Premium for unlimited messaging.",
+            code: "CHAT_ACCESS_DENIED",
           });
           return;
         }
@@ -144,12 +171,41 @@ const initializeSocket = (httpServer) => {
           return;
         }
 
-        // Check subscription again
-        const chatCheck = await canChatWithUser(userId, targetUserId);
-        if (!chatCheck.canChat) {
+        // Check chat access again based on interest rules (asymmetric access)
+        // User A can send message to User B if User A sent interest to User B
+        // User B can send message to User A only if User B accepted User A's interest
+        
+        // Check if user A (sender) sent interest to user B (recipient)
+        const outgoingInterest = await prisma.interest.findFirst({
+          where: {
+            fromUserId: userId,
+            toUserId: targetUserId,
+          },
+        });
+
+        // Check if user B (recipient) sent interest to user A (sender) and accepted it
+        const incomingInterest = await prisma.interest.findFirst({
+          where: {
+            fromUserId: targetUserId,
+            toUserId: userId,
+            status: "ACCEPTED",
+          },
+        });
+
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { role: true },
+        });
+
+        // Chat access rules:
+        // 1. User A can send message to User B if User A sent interest (regardless of acceptance status)
+        // 2. User B can send message to User A only if User B accepted User A's interest
+        const canSendMessage = outgoingInterest || user.role !== "USER" || incomingInterest;
+
+        if (!canSendMessage) {
           socket.emit("error", {
-            message: chatCheck.reason || "Chat not allowed",
-            code: "CHAT_NOT_ALLOWED",
+            message: "You need to send interest first to enable chat access. Upgrade to Premium for unlimited messaging.",
+            code: "CHAT_ACCESS_DENIED",
           });
           return;
         }
@@ -181,7 +237,6 @@ const initializeSocket = (httpServer) => {
             fromUser: {
               select: {
                 id: true,
-                email: true,
                 profile: {
                   select: {
                     firstName: true,
@@ -203,7 +258,6 @@ const initializeSocket = (httpServer) => {
           createdAt: message.createdAt,
           sender: {
             id: message.fromUser.id,
-            email: message.fromUser.email,
             name: `${message.fromUser.profile?.firstName || ""} ${message.fromUser.profile?.lastName || ""}`.trim(),
           },
         };
@@ -320,4 +374,3 @@ const initializeSocket = (httpServer) => {
 module.exports = {
   initializeSocket,
 };
-

@@ -55,6 +55,9 @@ const saveOTP = async (phone, otp, purpose = 'verification', expiryMinutes = 10)
   const otpKey = generateOTPKey(phone, purpose);
   await setWithExpiry(otpKey, otp, expiryMinutes * 60); // Convert to seconds
 
+  console.log("otpRecord:", otpRecord);
+  
+
   return otpRecord;
 };
 

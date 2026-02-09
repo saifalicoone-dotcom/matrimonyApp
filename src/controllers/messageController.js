@@ -61,34 +61,40 @@ const sendMessage = async (req, res, next) => {
       });
     }
 
-    // Check if there's mutual interest (ACCEPTED) or both are PREMIUM
+    // Check chat access based on interest rules
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { role: true },
     });
 
-    const targetUserWithRole = await prisma.user.findUnique({
-      where: { id: toUserId },
-      select: { role: true },
-    });
-
-    // Check mutual interest
-    const mutualInterest = await prisma.interest.findFirst({
+    // Check if user A (sender) sent interest to user B (recipient) and it's pending/accepted
+    const outgoingInterest = await prisma.interest.findFirst({
       where: {
-        OR: [
-          { fromUserId: userId, toUserId: toUserId, status: "ACCEPTED" },
-          { fromUserId: toUserId, toUserId: userId, status: "ACCEPTED" },
-        ],
+        fromUserId: userId,
+        toUserId: toUserId,
       },
     });
 
-    // Free users can only message if mutual interest exists
-    if (user.role === "USER" && !mutualInterest) {
+    // Check if user B (recipient) sent interest to user A (sender) and accepted it
+    const incomingInterest = await prisma.interest.findFirst({
+      where: {
+        fromUserId: toUserId,
+        toUserId: userId,
+        status: "ACCEPTED",
+      },
+    });
+
+    // Chat access rules:
+    // 1. User A can chat with User B if User A sent interest (regardless of acceptance status)
+    // 2. User B can chat with User A only if User B accepted User A's interest
+    const canSendMessage = outgoingInterest || user.role !== "USER" || incomingInterest;
+
+    if (!canSendMessage) {
       return res.status(403).json({
         status: "error",
         message:
-          "You need to have mutual interest (accepted) to send messages. Upgrade to Premium for unlimited messaging.",
-        error: "Mutual interest required for free users.",
+          "You need to send interest first to enable chat access. Upgrade to Premium for unlimited messaging.",
+        error: "Chat access required for free users.",
       });
     }
 
@@ -104,13 +110,11 @@ const sendMessage = async (req, res, next) => {
         fromUser: {
           select: {
             id: true,
-            email: true,
           },
         },
         toUser: {
           select: {
             id: true,
-            email: true,
           },
         },
       },
@@ -181,6 +185,29 @@ const getConversations = async (req, res, next) => {
     // Get latest message for each conversation
     const conversations = await Promise.all(
       paginatedUserIds.map(async (otherUserId) => {
+        // Check chat access for each conversation
+        const outgoingInterest = await prisma.interest.findFirst({
+          where: {
+            fromUserId: userId,
+            toUserId: otherUserId,
+          },
+        });
+
+        const incomingInterest = await prisma.interest.findFirst({
+          where: {
+            fromUserId: otherUserId,
+            toUserId: userId,
+            status: "ACCEPTED",
+          },
+        });
+
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { role: true },
+        });
+
+        const canAccessConversation = outgoingInterest || user.role !== "USER" || incomingInterest;
+
         const latestMessage = await prisma.message.findFirst({
           where: {
             OR: [
@@ -203,7 +230,6 @@ const getConversations = async (req, res, next) => {
           where: { id: otherUserId },
           select: {
             id: true,
-            email: true,
             photos: {
               where: { isPrimary: true },
               select: { url: true },
@@ -224,6 +250,7 @@ const getConversations = async (req, res, next) => {
           user: otherUser,
           latestMessage,
           unreadCount,
+          canAccessChat: canAccessConversation,  // Include chat access status
         };
       })
     );
@@ -302,6 +329,43 @@ const getMessages = async (req, res, next) => {
       },
     });
 
+    // Check chat access based on interest rules before fetching messages
+    // Check if user A (sender) sent interest to user B (recipient) and it's pending/accepted
+    const outgoingInterest = await prisma.interest.findFirst({
+      where: {
+        fromUserId: userId,
+        toUserId: otherUserId,
+      },
+    });
+
+    // Check if user B (recipient) sent interest to user A (sender) and accepted it
+    const incomingInterest = await prisma.interest.findFirst({
+      where: {
+        fromUserId: otherUserId,
+        toUserId: userId,
+        status: "ACCEPTED",
+      },
+    });
+
+    // Get user role to check if premium
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    // Chat access rules:
+    // 1. User A can view chat with User B if User A sent interest (regardless of acceptance status)
+    // 2. User B can view chat with User A only if User B accepted User A's interest
+    const canViewMessages = outgoingInterest || user.role !== "USER" || incomingInterest;
+
+    if (!canViewMessages) {
+      return res.status(403).json({
+        status: "error",
+        message: "You need to send interest first to access chat history. Upgrade to Premium for unlimited messaging.",
+        error: "Chat access required for free users.",
+      });
+    }
+
     // Get messages
     const messages = await prisma.message.findMany({
       where: {
@@ -317,13 +381,11 @@ const getMessages = async (req, res, next) => {
         fromUser: {
           select: {
             id: true,
-            email: true,
           },
         },
         toUser: {
           select: {
             id: true,
-            email: true,
           },
         },
       },

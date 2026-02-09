@@ -1,5 +1,6 @@
-# Use Node.js 18 LTS as base image
-FROM node:18-alpine
+# Use Node.js 20 LTS as base image
+# FROM node:18-alpine
+FROM node:20-bullseye
 
 # Set working directory
 WORKDIR /app
@@ -21,8 +22,11 @@ RUN npx prisma generate
 COPY . .
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+# RUN addgroup -g 1001 -S nodejs
+# RUN adduser -S nextjs -u 1001
+RUN groupadd -g 1001 nodejs
+RUN useradd -m -u 1001 -g nodejs nextjs
+
 
 # Change ownership of app directory
 RUN chown -R nextjs:nodejs /app

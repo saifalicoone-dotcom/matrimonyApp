@@ -4,8 +4,8 @@ const {
   getCachedProfileList,
   cacheRecommendations,
   getCachedRecommendations,
-  generateParamsHash
 } = require('../utils/cache');
+const { generateParamsHash } = require('../middleware/cacheMiddleware');
 
 const prisma = new PrismaClient();
 
@@ -16,10 +16,12 @@ const prisma = new PrismaClient();
 const searchUsers = async (req, res, next) => {
   try {
     const userId = req.user.id;
+    
+    // Sanitize and validate request parameters
     const {
       // Pagination
-      page = 1,
-      limit = 20,
+      page,
+      limit,
 
       // Personal Information Filters
       ageMin,
@@ -52,37 +54,65 @@ const searchUsers = async (req, res, next) => {
       drinking,
 
       // Sorting
-      sortBy = "createdAt", // createdAt, lastActive, age
-      order = "desc", // asc, desc
+      sortBy, // createdAt, lastActive, age
+      order, // asc, desc
     } = req.query;
+    
+    // Validate and sanitize values
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
+    const sanitizedSortBy = ['createdAt', 'lastActive', 'age'].includes(sortBy) ? sortBy : 'createdAt';
+    const sanitizedOrder = order && order.toLowerCase() === 'asc' ? 'asc' : 'desc';
+    
+    // Sanitize filters with proper validation
+    const sanitizedAgeMin = ageMin != null && !isNaN(ageMin) && !isNaN(parseInt(ageMin)) ? parseInt(ageMin) : null;
+    const sanitizedAgeMax = ageMax != null && !isNaN(ageMax) && !isNaN(parseInt(ageMax)) ? parseInt(ageMax) : null;
+    const sanitizedGender = gender && typeof gender === 'string' ? gender.trim().toUpperCase() : null;
+    const sanitizedHeightMin = heightMin != null && !isNaN(heightMin) && !isNaN(parseFloat(heightMin)) ? parseFloat(heightMin) : null;
+    const sanitizedHeightMax = heightMax != null && !isNaN(heightMax) && !isNaN(parseFloat(heightMax)) ? parseFloat(heightMax) : null;
+    const sanitizedMaritalStatus = maritalStatus && typeof maritalStatus === 'string' ? maritalStatus.trim().toUpperCase() : null;
+    const sanitizedCountry = country && typeof country === 'string' ? country.trim() : null;
+    const sanitizedState = state && typeof state === 'string' ? state.trim() : null;
+    const sanitizedCity = city && typeof city === 'string' ? city.trim() : null;
+    const sanitizedReligion = religion && typeof religion === 'string' ? religion.trim() : null;
+    const sanitizedCaste = caste && typeof caste === 'string' ? caste.trim() : null;
+    const sanitizedSubCaste = subCaste && typeof subCaste === 'string' ? subCaste.trim() : null;
+    const sanitizedCommunity = community && typeof community === 'string' ? community.trim() : null;
+    const sanitizedMotherTongue = motherTongue && typeof motherTongue === 'string' ? motherTongue.trim() : null;
+    const sanitizedEducation = education && typeof education === 'string' ? education.trim() : null;
+    const sanitizedOccupation = occupation && typeof occupation === 'string' ? occupation.trim() : null;
+    const sanitizedIncome = income && typeof income === 'string' ? income.trim() : null;
+    const sanitizedDiet = diet && typeof diet === 'string' ? diet.trim().toUpperCase() : null;
+    const sanitizedSmoking = smoking != null ? (smoking === 'true' || smoking === '1' || smoking === true) : undefined;
+    const sanitizedDrinking = drinking != null ? (drinking === 'true' || drinking === '1' || drinking === true) : undefined;
     
     // Create a hash of the parameters for caching
     const paramsHash = generateParamsHash({
       userId,
-      page,
-      limit,
-      ageMin,
-      ageMax,
-      gender,
-      heightMin,
-      heightMax,
-      maritalStatus,
-      country,
-      state,
-      city,
-      religion,
-      caste,
-      subCaste,
-      community,
-      motherTongue,
-      education,
-      occupation,
-      income,
-      diet,
-      smoking,
-      drinking,
-      sortBy,
-      order
+      page: pageNum,
+      limit: limitNum,
+      ageMin: sanitizedAgeMin,
+      ageMax: sanitizedAgeMax,
+      gender: sanitizedGender,
+      heightMin: sanitizedHeightMin,
+      heightMax: sanitizedHeightMax,
+      maritalStatus: sanitizedMaritalStatus,
+      country: sanitizedCountry,
+      state: sanitizedState,
+      city: sanitizedCity,
+      religion: sanitizedReligion,
+      caste: sanitizedCaste,
+      subCaste: sanitizedSubCaste,
+      community: sanitizedCommunity,
+      motherTongue: sanitizedMotherTongue,
+      education: sanitizedEducation,
+      occupation: sanitizedOccupation,
+      income: sanitizedIncome,
+      diet: sanitizedDiet,
+      smoking: sanitizedSmoking,
+      drinking: sanitizedDrinking,
+      sortBy: sanitizedSortBy,
+      order: sanitizedOrder
     });
     
     // Try to get from cache first
@@ -132,19 +162,19 @@ const searchUsers = async (req, res, next) => {
     };
 
     // Age filter (calculated from dateOfBirth)
-    if (ageMin || ageMax) {
+    if (sanitizedAgeMin != null || sanitizedAgeMax != null) {
       const today = new Date();
-      if (ageMin) {
+      if (sanitizedAgeMin != null) {
         const maxBirthDate = new Date(
-          today.getFullYear() - parseInt(ageMin),
+          today.getFullYear() - sanitizedAgeMin,
           today.getMonth(),
           today.getDate()
         );
         where.dateOfBirth = { ...where.dateOfBirth, lte: maxBirthDate };
       }
-      if (ageMax) {
+      if (sanitizedAgeMax != null) {
         const minBirthDate = new Date(
-          today.getFullYear() - parseInt(ageMax) - 1,
+          today.getFullYear() - sanitizedAgeMax - 1,
           today.getMonth(),
           today.getDate()
         );
@@ -153,93 +183,91 @@ const searchUsers = async (req, res, next) => {
     }
 
     // Gender filter
-    if (gender) {
-      where.gender = gender.toUpperCase();
+    if (sanitizedGender) {
+      where.gender = sanitizedGender;
     }
 
     // Height filter
-    if (heightMin || heightMax) {
+    if (sanitizedHeightMin != null || sanitizedHeightMax != null) {
       where.height = {};
-      if (heightMin) {
-        where.height.gte = parseFloat(heightMin);
+      if (sanitizedHeightMin != null) {
+        where.height.gte = sanitizedHeightMin;
       }
-      if (heightMax) {
-        where.height.lte = parseFloat(heightMax);
+      if (sanitizedHeightMax != null) {
+        where.height.lte = sanitizedHeightMax;
       }
     }
 
     // Marital status filter
-    if (maritalStatus) {
-      where.maritalStatus = maritalStatus.toUpperCase();
+    if (sanitizedMaritalStatus) {
+      where.maritalStatus = sanitizedMaritalStatus;
     }
 
     // Location filters
-    if (country) {
-      where.country = { contains: country, mode: "insensitive" };
+    if (sanitizedCountry) {
+      where.country = { contains: sanitizedCountry, mode: "insensitive" };
     }
-    if (state) {
-      where.state = { contains: state, mode: "insensitive" };
+    if (sanitizedState) {
+      where.state = { contains: sanitizedState, mode: "insensitive" };
     }
-    if (city) {
-      where.city = { contains: city, mode: "insensitive" };
+    if (sanitizedCity) {
+      where.city = { contains: sanitizedCity, mode: "insensitive" };
     }
 
     // Cultural background filters
-    if (religion) {
-      where.religion = { contains: religion, mode: "insensitive" };
+    if (sanitizedReligion) {
+      where.religion = { contains: sanitizedReligion, mode: "insensitive" };
     }
-    if (caste) {
-      where.caste = { contains: caste, mode: "insensitive" };
+    if (sanitizedCaste) {
+      where.caste = { contains: sanitizedCaste, mode: "insensitive" };
     }
-    if (subCaste) {
-      where.subCaste = { contains: subCaste, mode: "insensitive" };
+    if (sanitizedSubCaste) {
+      where.subCaste = { contains: sanitizedSubCaste, mode: "insensitive" };
     }
-    if (community) {
-      where.community = { contains: community, mode: "insensitive" };
+    if (sanitizedCommunity) {
+      where.community = { contains: sanitizedCommunity, mode: "insensitive" };
     }
-    if (motherTongue) {
-      where.motherTongue = { contains: motherTongue, mode: "insensitive" };
+    if (sanitizedMotherTongue) {
+      where.motherTongue = { contains: sanitizedMotherTongue, mode: "insensitive" };
     }
 
     // Education filter
-    if (education) {
-      where.education = { contains: education, mode: "insensitive" };
+    if (sanitizedEducation) {
+      where.education = { contains: sanitizedEducation, mode: "insensitive" };
     }
 
     // Occupation filter
-    if (occupation) {
-      where.occupation = { contains: occupation, mode: "insensitive" };
+    if (sanitizedOccupation) {
+      where.occupation = { contains: sanitizedOccupation, mode: "insensitive" };
     }
 
     // Income filter
-    if (income) {
-      where.income = { contains: income, mode: "insensitive" };
+    if (sanitizedIncome) {
+      where.income = { contains: sanitizedIncome, mode: "insensitive" };
     }
 
     // Lifestyle filters
-    if (diet) {
-      where.diet = diet.toUpperCase();
+    if (sanitizedDiet) {
+      where.diet = sanitizedDiet;
     }
-    if (smoking !== undefined) {
-      where.smoking = smoking === "true";
+    if (sanitizedSmoking !== undefined) {
+      where.smoking = sanitizedSmoking;
     }
-    if (drinking !== undefined) {
-      where.drinking = drinking === "true";
+    if (sanitizedDrinking !== undefined) {
+      where.drinking = sanitizedDrinking;
     }
 
     // Build orderBy clause
     const orderBy = {};
-    if (sortBy === "lastActive") {
-      orderBy.user = { lastActive: order };
-    } else if (sortBy === "age") {
-      orderBy.age = order;
+    if (sanitizedSortBy === "lastActive") {
+      orderBy.user = { lastActive: sanitizedOrder };
+    } else if (sanitizedSortBy === "age") {
+      orderBy.age = sanitizedOrder;
     } else {
-      orderBy.createdAt = order;
+      orderBy.createdAt = sanitizedOrder;
     }
 
-    // Calculate pagination
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
+    // Calculate pagination (pageNum and limitNum already defined above)
     const skip = (pageNum - 1) * limitNum;
 
     // Get total count
@@ -306,7 +334,40 @@ const searchUsers = async (req, res, next) => {
       data: responseData,
     });
   } catch (error) {
-    next(error);
+    console.error('SearchUsers Error:', error);
+    
+    // Log more detailed error information
+    if (error.code || error.message) {
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack,
+      });
+    }
+    
+    // Send appropriate error response
+    if (error.code === 'P2002') {
+      // Prisma unique constraint violation
+      return res.status(409).json({
+        status: 'error',
+        message: 'Conflict: Duplicate entry detected.',
+        error: error.message,
+      });
+    } else if (error.code && error.code.startsWith('P')) {
+      // Other Prisma errors
+      return res.status(400).json({
+        status: 'error',
+        message: 'Database query error occurred.',
+        error: error.message,
+      });
+    } else {
+      // Generic error
+      return res.status(500).json({
+        status: 'error',
+        message: 'An internal server error occurred during search.',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+      });
+    }
   }
 };
 
@@ -522,7 +583,40 @@ const getRecommendations = async (req, res, next) => {
       data: responseData,
     });
   } catch (error) {
-    next(error);
+    console.error('GetRecommendations Error:', error);
+    
+    // Log more detailed error information
+    if (error.code || error.message) {
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack,
+      });
+    }
+    
+    // Send appropriate error response
+    if (error.code === 'P2002') {
+      // Prisma unique constraint violation
+      return res.status(409).json({
+        status: 'error',
+        message: 'Conflict: Duplicate entry detected.',
+        error: error.message,
+      });
+    } else if (error.code && error.code.startsWith('P')) {
+      // Other Prisma errors
+      return res.status(400).json({
+        status: 'error',
+        message: 'Database query error occurred.',
+        error: error.message,
+      });
+    } else {
+      // Generic error
+      return res.status(500).json({
+        status: 'error',
+        message: 'An internal server error occurred during recommendations.',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+      });
+    }
   }
 };
 

@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'
 
 services:
   # PostgreSQL Database
@@ -14,7 +14,7 @@ services:
     #   - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -56,6 +56,11 @@ services:
       - RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxx
       - RAZORPAY_KEY_SECRET=your_razorpay_key_secret
       - RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
+      - R2_ACCOUNT_ID=85d5534a60594e5a9b5b98b068aea109
+      - R2_ACCESS_KEY_ID=ca3b32aaa712f2e039f6a789fc5599a9
+      - R2_SECRET_ACCESS_KEY=b95db8991a04c0fb8bc6de25d492c235be7f2dc6853fffd369c25c67d35748b4
+      - R2_BUCKET_NAME=development-bucket
+      - R2_ENDPOINT=https://85d5534a60594e5a9b5b98b068aea109.r2.cloudflarestorage.com
     depends_on:
       postgres:
         condition: service_healthy

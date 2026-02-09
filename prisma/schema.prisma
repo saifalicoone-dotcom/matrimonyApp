@@ -1,6 +1,3 @@
-// Prisma Schema for Matrimonial Web Application
-// Based on Product Requirements Document
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,6 +5,302 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     String               @id @default(uuid())
+  email                  String?              @unique
+  phone                  String               @unique
+  passwordHash           String?
+  role                   Role                 @default(USER)
+  isEmailVerified        Boolean              @default(false)
+  isPhoneVerified        Boolean              @default(false)
+  isActive               Boolean              @default(true)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  lastActive             DateTime             @default(now())
+  blockedBy              BlockList[]          @relation("BlockedUsers")
+  blockedUsers           BlockList[]          @relation("BlockerUsers")
+  chattedWithUsers       ChatUser[]           @relation("ChattedWithUsers")
+  chatUsers              ChatUser[]           @relation("UserChats")
+  sentInterests          Interest[]           @relation("SentInterests")
+  receivedInterests      Interest[]           @relation("ReceivedInterests")
+  sentMessages           Message[]            @relation("SentMessages")
+  receivedMessages       Message[]            @relation("ReceivedMessages")
+  notifications          Notification[]
+  photoAccessRequestsFor PhotoAccessRequest[] @relation("PhotoAccessOwner")
+  photoAccessRequests    PhotoAccessRequest[] @relation("PhotoAccessRequester")
+  photos                 Photo[]
+  profile                Profile?
+  reportsReceived        Report[]             @relation("ReportReported")
+  reportsSubmitted       Report[]             @relation("ReportReporter")
+  shortlistedBy          Shortlist[]          @relation("ShortlistedUsers")
+  shortlists             Shortlist[]          @relation("UserShortlists")
+  subscriptions          Subscription[]
+  walletTransactions     WalletTransaction[]
+  wallet                 Wallet?
+
+  @@map("users")
+}
+
+model Profile {
+  id                   String        @id @default(uuid())
+  userId               String        @unique
+  firstName            String
+  lastName             String?
+  dateOfBirth          DateTime
+  age                  Int
+  gender               Gender
+  height               Float?
+  maritalStatus        MaritalStatus @default(NEVER_MARRIED)
+  email                String
+  phone                String?
+  withContact          Boolean       @default(false)
+  education            String?
+  occupation           String?
+  income               String?
+  country              String?
+  state                String?
+  city                 String?
+  address              String?
+  religion             String?
+  caste                String?
+  subCaste             String?
+  community            String?
+  motherTongue         String?
+  familyType           String?
+  fatherOccupation     String?
+  motherOccupation     String?
+  diet                 Diet?
+  smoking              Boolean       @default(false)
+  drinking             Boolean       @default(false)
+  aboutMe              String?
+  partnerPreferences   String?
+  isVerified           Boolean       @default(false)
+  verificationDocument String?
+  profileVisible       Boolean       @default(true)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  highestQualification String?
+  numberOfBrothers     Int?          @default(0)
+  numberOfChildren     Int?
+  numberOfSisters      Int?          @default(0)
+  profileFor           ProfileFor    @default(SELF)
+  marriedBrothers      Int?          @default(0)
+  marriedSisters       Int?          @default(0)
+  faceEncoding         Json?
+  faceVerificationDate DateTime?
+  faceVerified         Boolean       @default(false)
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([religion, caste])
+  @@index([country, state, city])
+  @@map("profiles")
+}
+
+model Photo {
+  id        String   @id @default(uuid())
+  userId    String
+  url       String
+  isPrimary Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isPrivate Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("photos")
+}
+
+model Interest {
+  id              String   @id @default(uuid())
+  fromUserId      String
+  toUserId        String
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  contactUnlocked Boolean  @default(false)
+  fromUser        User     @relation("SentInterests", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser          User     @relation("ReceivedInterests", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+  @@map("interests")
+}
+
+model Shortlist {
+  id                String   @id @default(uuid())
+  userId            String
+  shortlistedUserId String
+  createdAt         DateTime @default(now())
+  shortlistedUser   User     @relation("ShortlistedUsers", fields: [shortlistedUserId], references: [id], onDelete: Cascade)
+  user              User     @relation("UserShortlists", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, shortlistedUserId])
+  @@map("shortlists")
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  fromUser   User     @relation("SentMessages", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser     User     @relation("ReceivedMessages", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Subscription {
+  id        String   @id @default(uuid())
+  userId    String
+  planType  String
+  startDate DateTime @default(now())
+  endDate   DateTime
+  isActive  Boolean  @default(true)
+  paymentId String?
+  amount    Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model ChatUser {
+  id         String   @id @default(uuid())
+  userId     String
+  chatUserId String
+  createdAt  DateTime @default(now())
+  chatUser   User     @relation("ChattedWithUsers", fields: [chatUserId], references: [id], onDelete: Cascade)
+  user       User     @relation("UserChats", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chatUserId])
+  @@index([userId])
+  @@map("chat_users")
+}
+
+model BlockList {
+  id            String   @id @default(uuid())
+  userId        String
+  blockedUserId String
+  createdAt     DateTime @default(now())
+  blockedUser   User     @relation("BlockedUsers", fields: [blockedUserId], references: [id], onDelete: Cascade)
+  user          User     @relation("BlockerUsers", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, blockedUserId])
+  @@map("blocklists")
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+  userId        String
+  type          String
+  title         String
+  message       String
+  isRead        Boolean  @default(false)
+  relatedUserId String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Otp {
+  id        String   @id @default(uuid())
+  phone     String
+  otp       String
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  purpose   String?  @default("verification") @db.VarChar(50)
+
+  @@index([phone, isUsed])
+  @@index([purpose], map: "idx_otps_purpose")
+  @@map("otps")
+}
+
+model PhotoAccessRequest {
+  id          String   @id @default(uuid())
+  requesterId String
+  ownerId     String
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  owner       User     @relation("PhotoAccessOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  requester   User     @relation("PhotoAccessRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, ownerId])
+  @@index([ownerId, status])
+  @@index([requesterId])
+  @@map("photo_access_requests")
+}
+
+model Wallet {
+  id           String              @id @default(uuid())
+  userId       String              @unique
+  balance      Float               @default(0)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  transactions WalletTransaction[]
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id                String          @id @default(uuid())
+  walletId          String
+  type              TransactionType
+  amount            Float
+  balanceAfter      Float
+  description       String?
+  referenceId       String?
+  referenceType     String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+  paymentStatus     String?         @default("PENDING")
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  userId            String?
+  User              User?           @relation(fields: [userId], references: [id])
+  wallet            Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+  @@index([referenceId, referenceType])
+  @@index([razorpayOrderId])
+  @@index([razorpayPaymentId])
+  @@map("wallet_transactions")
+}
+
+model Report {
+  id             String       @id @default(uuid())
+  reporterId     String
+  reportedUserId String
+  type           ReportType
+  reason         String?
+  status         ReportStatus @default(PENDING)
+  adminNotes     String?
+  adminAction    String?
+  refundAmount   Float?
+  refundedAt     DateTime?
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  resolvedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  reportedUser   User         @relation("ReportReported", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reporter       User         @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([reporterId, reportedUserId, type])
+  @@index([reportedUserId, status])
+  @@index([reporterId])
+  @@index([status])
+  @@map("reports")
 }
 
 enum Role {
@@ -24,10 +317,10 @@ enum Gender {
 
 enum MaritalStatus {
   NEVER_MARRIED
-  AWAITING_DIVORCE
   DIVORCED
   WIDOWED
   ANNULLED
+  AWAITING_DIVORCE
 }
 
 enum ProfileFor {
@@ -46,287 +339,6 @@ enum Diet {
   NON_VEGETARIAN
   JAIN
   EGGETARIAN
-}
-
-// User Model - Authentication and Basic Info
-model User {
-  id              String   @id @default(uuid())
-  email           String?  @unique
-  phone           String   @unique
-  passwordHash    String?
-  role            Role     @default(USER)
-  isEmailVerified Boolean  @default(false)
-  isPhoneVerified Boolean  @default(false)
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  lastActive      DateTime @default(now())
-
-  // Relations
-  profile                Profile?
-  photos                 Photo[]
-  subscriptions          Subscription[]
-  sentInterests          Interest[]           @relation("SentInterests")
-  receivedInterests      Interest[]           @relation("ReceivedInterests")
-  sentMessages           Message[]            @relation("SentMessages")
-  receivedMessages       Message[]            @relation("ReceivedMessages")
-  shortlists             Shortlist[]          @relation("UserShortlists")
-  shortlistedBy          Shortlist[]          @relation("ShortlistedUsers")
-  blockedUsers           BlockList[]          @relation("BlockerUsers")
-  blockedBy              BlockList[]          @relation("BlockedUsers")
-  notifications          Notification[]
-  photoAccessRequests    PhotoAccessRequest[] @relation("PhotoAccessRequester")
-  photoAccessRequestsFor PhotoAccessRequest[] @relation("PhotoAccessOwner")
-  wallet                 Wallet?
-  walletTransactions     WalletTransaction[]
-  reportsSubmitted       Report[]             @relation("ReportReporter")
-  reportsReceived        Report[]             @relation("ReportReported")
-  chatUsers              ChatUser[]           @relation("UserChats")
-  chattedWithUsers       ChatUser[]           @relation("ChattedWithUsers")
-
-  @@map("users")
-}
-
-// Profile Model - Comprehensive User Details
-model Profile {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Personal Information
-  profileFor       ProfileFor    @default(SELF) // Who is this profile for
-  firstName        String
-  lastName         String?
-  dateOfBirth      DateTime
-  age              Int
-  gender           Gender
-  height           Float? // in cm
-  maritalStatus    MaritalStatus @default(NEVER_MARRIED)
-  numberOfChildren Int? // Only for divorced/widowed/annulled/awaiting divorce
-
-  // Contact (stored but visibility controlled)
-  email       String
-  phone       String?
-  withContact Boolean @default(false) // Allow contact viewing
-
-  // Education & Career
-  education            String?
-  highestQualification String? // Highest qualification/degree
-  occupation           String?
-  income               String? // e.g., "5-10 Lakhs", "10-15 Lakhs"
-
-  // Location
-  country String?
-  state   String?
-  city    String?
-  address String?
-
-  // Cultural Background
-  religion     String?
-  caste        String?
-  subCaste     String?
-  community    String?
-  motherTongue String?
-
-  // Family Background
-  familyType       String? // "Nuclear", "Joint"
-  fatherOccupation String?
-  motherOccupation String?
-  numberOfBrothers Int?    @default(0) // Number of brothers
-  numberOfSisters  Int?    @default(0) // Number of sisters
-  marriedBrothers  Int?    @default(0) // Number of married brothers
-  marriedSisters   Int?    @default(0) // Number of married sisters
-
-  // Lifestyle
-  diet     Diet?
-  smoking  Boolean @default(false)
-  drinking Boolean @default(false)
-
-  // About & Preferences
-  aboutMe            String? @db.Text
-  partnerPreferences String? @db.Text
-
-  // Verification
-  isVerified           Boolean   @default(false)
-  verificationDocument String? // URL to verification document
-  faceEncoding         Json? // Face encoding array from face-api.js (128-512 numbers)
-  faceVerified         Boolean   @default(false) // Face verification status
-  faceVerificationDate DateTime? // When face was verified
-
-  // Visibility Settings
-  profileVisible Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([religion, caste])
-  @@index([country, state, city])
-  @@map("profiles")
-}
-
-// Photo Model - Profile Photos
-model Photo {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  url       String // R2 URL or cloud storage URL
-  isPrimary Boolean  @default(false)
-  isPrivate Boolean  @default(false) // If true, requires access request to view
-  order     Int      @default(0) // For ordering photos
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("photos")
-}
-
-// Interest Model - Users expressing interest in each other
-model Interest {
-  id              String   @id @default(uuid())
-  fromUserId      String
-  toUserId        String
-  fromUser        User     @relation("SentInterests", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUser          User     @relation("ReceivedInterests", fields: [toUserId], references: [id], onDelete: Cascade)
-  status          String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
-  contactUnlocked Boolean  @default(false) // Whether contact was unlocked (₹5 deducted)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@unique([fromUserId, toUserId])
-  @@map("interests")
-}
-
-// Shortlist Model - Users marking profiles as favorites
-model Shortlist {
-  id                String   @id @default(uuid())
-  userId            String
-  shortlistedUserId String
-  user              User     @relation("UserShortlists", fields: [userId], references: [id], onDelete: Cascade)
-  shortlistedUser   User     @relation("ShortlistedUsers", fields: [shortlistedUserId], references: [id], onDelete: Cascade)
-  createdAt         DateTime @default(now())
-
-  @@unique([userId, shortlistedUserId])
-  @@map("shortlists")
-}
-
-// Message Model - Chat Messages
-model Message {
-  id         String   @id @default(uuid())
-  fromUserId String
-  toUserId   String
-  fromUser   User     @relation("SentMessages", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUser     User     @relation("ReceivedMessages", fields: [toUserId], references: [id], onDelete: Cascade)
-  content    String   @db.Text
-  isRead     Boolean  @default(false)
-  createdAt  DateTime @default(now())
-
-  @@map("messages")
-}
-
-// Subscription Model - Premium Plans
-model Subscription {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  planType  String // "BASIC", "MEDIUM", "HIGH"
-  startDate DateTime @default(now())
-  endDate   DateTime
-  isActive  Boolean  @default(true)
-  paymentId String? // Payment gateway transaction ID
-  amount    Float?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("subscriptions")
-}
-
-// Chat User Tracking - Track unique users for MEDIUM plan (20 limit)
-model ChatUser {
-  id         String   @id @default(uuid())
-  userId     String // User who has subscription
-  chatUserId String // User they are chatting with
-  user       User     @relation("UserChats", fields: [userId], references: [id], onDelete: Cascade)
-  chatUser   User     @relation("ChattedWithUsers", fields: [chatUserId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-
-  @@unique([userId, chatUserId]) // One entry per user pair
-  @@index([userId])
-  @@map("chat_users")
-}
-
-// BlockList Model - Blocked Users
-model BlockList {
-  id            String   @id @default(uuid())
-  userId        String // User who blocked
-  blockedUserId String // User who is blocked
-  user          User     @relation("BlockerUsers", fields: [userId], references: [id], onDelete: Cascade)
-  blockedUser   User     @relation("BlockedUsers", fields: [blockedUserId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
-
-  @@unique([userId, blockedUserId])
-  @@map("blocklists")
-}
-
-// Notification Model - User Notifications
-model Notification {
-  id            String   @id @default(uuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type          String // "message", "interest", "match", "profile_view"
-  title         String
-  message       String   @db.Text
-  isRead        Boolean  @default(false)
-  relatedUserId String? // ID of user related to notification (e.g., who sent message)
-  metadata      Json? // Additional data as JSON
-  createdAt     DateTime @default(now())
-
-  @@map("notifications")
-}
-
-// OTP Model - Phone Verification OTPs
-model Otp {
-  id        String   @id @default(uuid())
-  phone     String
-  otp       String // 6-digit OTP
-  purpose   String   @default("verification") // 'registration', 'login', 'verification'
-  expiresAt DateTime
-  isUsed    Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([phone, isUsed])
-  @@index([purpose])
-  @@map("otps")
-}
-
-// Photo Access Request Model - For requesting access to private photos
-model PhotoAccessRequest {
-  id          String   @id @default(uuid())
-  requesterId String // User requesting access
-  requester   User     @relation("PhotoAccessRequester", fields: [requesterId], references: [id], onDelete: Cascade)
-  ownerId     String // User who owns the private photos
-  owner       User     @relation("PhotoAccessOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  status      String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([requesterId, ownerId]) // One request per requester-owner pair
-  @@index([ownerId, status])
-  @@index([requesterId])
-  @@map("photo_access_requests")
-}
-
-// Wallet Model - User wallet for payments
-model Wallet {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  balance   Float    @default(0) // Balance in INR
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  transactions WalletTransaction[]
-
-  @@map("wallets")
 }
 
 enum TransactionType {
@@ -349,59 +361,4 @@ enum ReportStatus {
   APPROVED
   REJECTED
   RESOLVED
-}
-
-// Wallet Transaction Model - Transaction history
-model WalletTransaction {
-  id                String          @id @default(uuid())
-  walletId          String
-  wallet            Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
-  type              TransactionType // CREDIT or DEBIT
-  amount            Float // Transaction amount
-  balanceAfter      Float // Balance after this transaction
-  description       String? // Transaction description
-  referenceId       String? // Reference to related entity (e.g., interest ID)
-  referenceType     String? // Type of reference (e.g., "INTEREST", "ADD_MONEY", "PAYMENT")
-  // Razorpay payment fields
-  razorpayOrderId   String? // Razorpay order ID
-  razorpayPaymentId String? // Razorpay payment ID
-  razorpaySignature String? // Razorpay signature for verification
-  paymentStatus     String?         @default("PENDING") // PENDING, SUCCESS, FAILED
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  User              User?           @relation(fields: [userId], references: [id])
-  userId            String?
-
-  @@index([walletId])
-  @@index([referenceId, referenceType])
-  @@index([razorpayOrderId])
-  @@index([razorpayPaymentId])
-  @@map("wallet_transactions")
-}
-
-// Report Model - User reports for other users
-model Report {
-  id             String       @id @default(uuid())
-  reporterId     String // User who reported
-  reportedUserId String // User who is reported
-  reporter       User         @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
-  reportedUser   User         @relation("ReportReported", fields: [reportedUserId], references: [id], onDelete: Cascade)
-  type           ReportType // Type of report
-  reason         String?      @db.Text // Additional reason/details
-  status         ReportStatus @default(PENDING) // Report status
-  adminNotes     String?      @db.Text // Admin notes/decision
-  adminAction    String? // Action taken: REFUND, DEACTIVATE, REMOVE, WARNING, NONE
-  refundAmount   Float? // Amount refunded (if applicable)
-  refundedAt     DateTime? // When refund was processed
-  reviewedBy     String? // Admin user ID who reviewed
-  reviewedAt     DateTime? // When reviewed
-  resolvedAt     DateTime? // When resolved
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@unique([reporterId, reportedUserId, type]) // One report per type per user pair
-  @@index([reportedUserId, status])
-  @@index([reporterId])
-  @@index([status])
-  @@map("reports")
 }

@@ -1,15 +1,21 @@
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const { PrismaClient } = require("@prisma/client");
-const { getPlanDetails } = require("../services/subscriptionService");
+const { getPlanDetails, SUBSCRIPTION_PLANS } = require("../services/subscriptionService");
 
 const prisma = new PrismaClient();
 
-// Initialize Razorpay
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// Check if we're in development mode (bypass Razorpay)
+const IS_DEVELOPMENT = process.env.NODE_ENV === 'development' || process.env.SUBSCRIPTION_DEV_MODE === 'true';
+
+// Initialize Razorpay only in production
+let razorpay = null;
+if (!IS_DEVELOPMENT) {
+  razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+  });
+}
 
 /**
  * Get Available Subscription Plans
@@ -17,46 +23,23 @@ const razorpay = new Razorpay({
  */
 const getPlans = async (req, res, next) => {
   try {
-    const plans = {
-      BASIC: {
-        name: "BASIC",
-        price: 99,
-        duration: 30,
+    // Convert flat structure to features structure for API response
+    const plans = {};
+    for (const [planType, planConfig] of Object.entries(SUBSCRIPTION_PLANS)) {
+      plans[planType] = {
+        name: planConfig.name,
+        price: planConfig.price,
+        duration: planConfig.duration,
         features: {
-          interests: 30,
-          shortlist: 10,
-          chat: false,
-          profileBoost: false,
-          verifiedBadge: false,
+          interests: planConfig.interests === -1 ? "Unlimited" : planConfig.interests,
+          shortlist: planConfig.shortlist === -1 ? "Unlimited" : planConfig.shortlist,
+          chat: planConfig.chat,
+          chatLimit: planConfig.chatLimit === -1 ? "Unlimited" : planConfig.chatLimit,
+          profileBoost: planConfig.profileBoost,
+          verifiedBadge: planConfig.verifiedBadge,
         },
-      },
-      MEDIUM: {
-        name: "MEDIUM",
-        price: 299,
-        duration: 90,
-        features: {
-          interests: 150,
-          shortlist: 30,
-          chat: true,
-          chatLimit: 20,
-          profileBoost: false,
-          verifiedBadge: false,
-        },
-      },
-      HIGH: {
-        name: "HIGH",
-        price: 999,
-        duration: 120,
-        features: {
-          interests: "Unlimited",
-          shortlist: "Unlimited",
-          chat: true,
-          chatLimit: "Unlimited",
-          profileBoost: true,
-          verifiedBadge: true,
-        },
-      },
-    };
+      };
+    }
 
     res.json({
       status: "success",
@@ -155,6 +138,19 @@ const purchaseSubscription = async (req, res, next) => {
       });
     }
 
+    // Validate plan structure to ensure required properties exist
+    const hasFlatStructure = planDetails.hasOwnProperty('interests');
+    const hasFeaturesStructure = planDetails.features && planDetails.features.hasOwnProperty('interests');
+    
+    if (!hasFlatStructure && !hasFeaturesStructure) {
+      console.error('Invalid plan structure:', planType, planDetails);
+      return res.status(500).json({
+        status: "error",
+        message: "Internal server error: Invalid plan configuration.",
+        error: "Plan configuration error.",
+      });
+    }
+
     // Check if user already has an active subscription
     const existingSubscription = await prisma.subscription.findFirst({
       where: {
@@ -185,6 +181,87 @@ const purchaseSubscription = async (req, res, next) => {
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + planDetails.duration);
 
+    // Development mode: Create active subscription directly
+    if (IS_DEVELOPMENT) {
+      // Handle both possible plan structures (flat or with features)
+      const planStructure = planDetails.features ? planDetails.features : planDetails;
+      
+      const subscription = await prisma.subscription.create({
+        data: {
+          userId,
+          planType,
+          startDate,
+          endDate,
+          isActive: true, // Active immediately in development
+          amount: planDetails.price,
+          paymentId: `dev_${Date.now()}`, // Mock payment ID
+        },
+      });
+
+      // Calculate remaining limits - handle both structures
+      let remainingInterests, remainingShortlist, remainingChat;
+      
+      if (typeof planStructure.interests === 'number') {
+        // Flat structure: interests is a number (30, 150, -1)
+        remainingInterests = planStructure.interests === -1 ? -1 : planStructure.interests;
+      } else if (planStructure.interests === "Unlimited") {
+        // String structure: interests is "Unlimited"
+        remainingInterests = -1; // Unlimited
+      } else {
+        remainingInterests = planStructure.interests || 0;
+      }
+      
+      if (typeof planStructure.shortlist === 'number') {
+        // Flat structure: shortlist is a number (10, 30, -1)
+        remainingShortlist = planStructure.shortlist === -1 ? -1 : planStructure.shortlist;
+      } else if (planStructure.shortlist === "Unlimited") {
+        // String structure: shortlist is "Unlimited"
+        remainingShortlist = -1; // Unlimited
+      } else {
+        remainingShortlist = planStructure.shortlist || 0;
+      }
+      
+      if (typeof planStructure.chatLimit === 'number') {
+        // Flat structure: chatLimit is a number (0, 20, -1)
+        remainingChat = planStructure.chatLimit === -1 ? -1 : planStructure.chatLimit;
+      } else if (planStructure.chatLimit === "Unlimited") {
+        // String structure: chatLimit is "Unlimited"
+        remainingChat = -1; // Unlimited
+      } else if (planStructure.chat) {
+        // Backward compatibility: check chat property
+        remainingChat = planStructure.chatLimit || 0;
+      } else {
+        remainingChat = 0;
+      }
+
+      return res.status(201).json({
+        status: "success",
+        message: "Subscription purchased successfully (Development Mode).",
+        data: {
+          subscription: {
+            id: subscription.id,
+            planType: subscription.planType,
+            planDetails: planDetails,
+            startDate: subscription.startDate,
+            endDate: subscription.endDate,
+            isActive: subscription.isActive,
+            daysRemaining: Math.ceil(
+              (new Date(subscription.endDate) - new Date()) / (1000 * 60 * 60 * 24)
+            ),
+          },
+          limits: {
+            interests: remainingInterests,
+            shortlist: remainingShortlist,
+            chat: remainingChat,
+            profileBoost: planStructure.profileBoost || planDetails.profileBoost,
+            verifiedBadge: planStructure.verifiedBadge || planDetails.verifiedBadge,
+          },
+          mode: "development",
+        },
+      });
+    }
+
+    // Production mode: Create Razorpay order
     // Convert amount to paise (Razorpay uses paise)
     const amountInPaise = Math.round(planDetails.price * 100);
 

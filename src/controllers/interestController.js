@@ -31,7 +31,7 @@ const sendInterest = async (req, res, next) => {
       });
     }
 
-    // Check if target user exists
+    // Check if target user exists and is active
     const targetUser = await prisma.user.findUnique({
       where: { id: toUserId },
       select: { id: true, isActive: true },
@@ -63,21 +63,6 @@ const sendInterest = async (req, res, next) => {
       });
     }
 
-    // Check subscription limit for interests
-    const interestCheck = await canSendInterest(userId);
-    if (!interestCheck.canSend) {
-      return res.status(403).json({
-        status: "error",
-        message: interestCheck.reason,
-        error: "INTEREST_LIMIT_REACHED",
-        data: {
-          planType: interestCheck.planType,
-          limit: interestCheck.limit,
-          used: interestCheck.used,
-        },
-      });
-    }
-
     // Check if interest already exists
     const existingInterest = await prisma.interest.findFirst({
       where: {
@@ -94,60 +79,89 @@ const sendInterest = async (req, res, next) => {
       });
     }
 
-    // Check wallet balance and deduct money
+    // Check subscription status for interest sending
+    const interestCheck = await canSendInterest(userId);
+    
+    let paymentMethod = null;
     let walletResult = null;
     let contactUnlocked = false;
+    let subscriptionInfo = null;
 
-    try {
-      // Get or create wallet
-      let wallet = await prisma.wallet.findUnique({
-        where: { userId },
-      });
-
-      if (!wallet) {
-        wallet = await prisma.wallet.create({
-          data: {
-            userId,
-            balance: 0,
-          },
-        });
-      }
-
-      // Check if balance is sufficient
-      if (wallet.balance < INTEREST_FEE) {
-        return res.status(402).json({
-          status: "error",
-          message: "Insufficient wallet balance. Please add money to send interest.",
-          error: "INSUFFICIENT_BALANCE",
-          data: {
-            required: INTEREST_FEE,
-            current: wallet.balance,
-          },
-        });
-      }
-
-      // Deduct money using database transaction
-      walletResult = await deductMoney(
-        userId,
-        INTEREST_FEE,
-        `Deducted ₹${INTEREST_FEE} for sending interest`,
-        null, // Will be set after interest creation
-        "INTEREST"
-      );
-
+    // Subscription-based interest sending
+    if (interestCheck.canSend && interestCheck.planType) {
+      // User has active subscription with available limit
+      paymentMethod = "subscription";
       contactUnlocked = true;
-    } catch (error) {
-      if (error.message === "INSUFFICIENT_BALANCE") {
-        return res.status(402).json({
-          status: "error",
-          message: "Insufficient wallet balance. Please add money to send interest.",
-          error: "INSUFFICIENT_BALANCE",
+      subscriptionInfo = {
+        planType: interestCheck.planType,
+        limit: interestCheck.limit,
+        used: interestCheck.used,
+        remaining: interestCheck.remaining || (interestCheck.limit === -1 ? -1 : interestCheck.limit - interestCheck.used)
+      };
+      
+      // For HIGH plan (unlimited), we don't need to track usage
+      // For other plans, we'll track the usage in the response
+    } 
+    // Pay-per-interest scenario
+    else {
+      paymentMethod = "pay_per_interest";
+      
+      // Check wallet balance for ₹5 payment
+      try {
+        let wallet = await prisma.wallet.findUnique({
+          where: { userId },
         });
+
+        if (!wallet) {
+          wallet = await prisma.wallet.create({
+            data: {
+              userId,
+              balance: 0,
+            },
+          });
+        }
+
+        // Check if balance is sufficient
+        if (wallet.balance < INTEREST_FEE) {
+          return res.status(402).json({
+            status: "error",
+            message: "Insufficient wallet balance. Please add ₹5 to send interest.",
+            error: "INSUFFICIENT_BALANCE",
+            data: {
+              required: INTEREST_FEE,
+              current: wallet.balance,
+              paymentMethod: "pay_per_interest"
+            },
+          });
+        }
+
+        // Deduct money using database transaction
+        walletResult = await deductMoney(
+          userId,
+          INTEREST_FEE,
+          `Deducted ₹${INTEREST_FEE} for sending interest (Pay-per-interest)`,
+          null, // Will be set after interest creation
+          "INTEREST"
+        );
+
+        contactUnlocked = true;
+      } catch (error) {
+        if (error.message === "INSUFFICIENT_BALANCE") {
+          return res.status(402).json({
+            status: "error",
+            message: "Insufficient wallet balance. Please add ₹5 to send interest.",
+            error: "INSUFFICIENT_BALANCE",
+            data: {
+              required: INTEREST_FEE,
+              paymentMethod: "pay_per_interest"
+            },
+          });
+        }
+        throw error;
       }
-      throw error;
     }
 
-    // Create interest with contact unlocked
+    // Create interest with contact unlocked status
     const interest = await prisma.$transaction(async (tx) => {
       const newInterest = await tx.interest.create({
         data: {
@@ -160,13 +174,11 @@ const sendInterest = async (req, res, next) => {
           fromUser: {
             select: {
               id: true,
-              email: true,
             },
           },
           toUser: {
             select: {
               id: true,
-              email: true,
             },
           },
         },
@@ -199,26 +211,47 @@ const sendInterest = async (req, res, next) => {
       // Continue even if notification fails
     }
 
-    // Get updated wallet balance
-    const updatedWallet = walletResult
-      ? await prisma.wallet.findUnique({
-          where: { userId },
-          select: { balance: true },
-        })
-      : null;
+    // Prepare response data based on payment method
+    const responseData = {
+      interest: {
+        ...interest,
+        paymentMethod: paymentMethod,
+        subscriptionInfo: subscriptionInfo
+      },
+      // User A (sender) can chat immediately after sending interest
+      chatEnabledForSender: true,
+      // User B (recipient) cannot chat initially - chat is locked until they accept
+      chatLockedForRecipient: true
+    };
+
+    // Add wallet information if payment was made
+    if (paymentMethod === "pay_per_interest" && walletResult) {
+      const updatedWallet = await prisma.wallet.findUnique({
+        where: { userId },
+        select: { balance: true },
+      });
+      
+      responseData.wallet = {
+        balance: updatedWallet.balance,
+        deducted: INTEREST_FEE,
+        paymentMethod: "pay_per_interest"
+      };
+    }
+    // Add subscription information if subscription was used
+    else if (paymentMethod === "subscription" && subscriptionInfo) {
+      responseData.subscription = subscriptionInfo;
+    }
+
+    // Success message based on payment method
+    let successMessage = "Interest sent successfully.";
+    if (contactUnlocked) {
+      successMessage += " You can now chat with the user.";
+    }
 
     res.status(201).json({
       status: "success",
-      message: "Interest sent successfully. Contact unlocked.",
-      data: {
-        interest,
-        wallet: updatedWallet
-          ? {
-              balance: updatedWallet.balance,
-              deducted: INTEREST_FEE,
-            }
-          : null,
-      },
+      message: successMessage,
+      data: responseData
     });
   } catch (error) {
     if (error.code === "P2002") {
@@ -248,13 +281,11 @@ const acceptInterest = async (req, res, next) => {
         fromUser: {
           select: {
             id: true,
-            email: true,
           },
         },
         toUser: {
           select: {
             id: true,
-            email: true,
           },
         },
       },
@@ -286,24 +317,111 @@ const acceptInterest = async (req, res, next) => {
       });
     }
 
+    // Check subscription status for accepting user (User B)
+    const interestCheck = await canSendInterest(userId);
+    
+    let paymentMethod = null;
+    let walletResult = null;
+    let subscriptionInfo = null;
+
+    // For accepting interest, check if user has subscription OR needs to pay
+    if (interestCheck.canSend && interestCheck.planType) {
+      // User has active subscription with available limit
+      paymentMethod = "subscription";
+      subscriptionInfo = {
+        planType: interestCheck.planType,
+        limit: interestCheck.limit,
+        used: interestCheck.used,
+        remaining: interestCheck.remaining || (interestCheck.limit === -1 ? -1 : interestCheck.limit - interestCheck.used)
+      };
+    } else {
+      // User needs to pay ₹5 to unlock chat
+      paymentMethod = "pay_per_interest";
+      
+      try {
+        let wallet = await prisma.wallet.findUnique({
+          where: { userId },
+        });
+
+        if (!wallet) {
+          wallet = await prisma.wallet.create({
+            data: {
+              userId,
+              balance: 0,
+            },
+          });
+        }
+
+        // Check if balance is sufficient
+        if (wallet.balance < INTEREST_FEE) {
+          return res.status(402).json({
+            status: "error",
+            message: "Insufficient wallet balance. Please add ₹5 to unlock chat.",
+            error: "INSUFFICIENT_BALANCE",
+            data: {
+              required: INTEREST_FEE,
+              current: wallet.balance,
+              paymentMethod: "pay_per_interest"
+            },
+          });
+        }
+
+        // Deduct money using database transaction
+        walletResult = await deductMoney(
+          userId,
+          INTEREST_FEE,
+          `Deducted ₹${INTEREST_FEE} for unlocking chat (Accept interest)`,
+          null, // Will be set after interest update
+          "CHAT_UNLOCK"
+        );
+      } catch (error) {
+        if (error.message === "INSUFFICIENT_BALANCE") {
+          return res.status(402).json({
+            status: "error",
+            message: "Insufficient wallet balance. Please add ₹5 to unlock chat.",
+            error: "INSUFFICIENT_BALANCE",
+            data: {
+              required: INTEREST_FEE,
+              paymentMethod: "pay_per_interest"
+            },
+          });
+        }
+        throw error;
+      }
+    }
+
     // Update interest status
-    const updatedInterest = await prisma.interest.update({
-      where: { id: interest.id },
-      data: { status: "ACCEPTED" },
-      include: {
-        fromUser: {
-          select: {
-            id: true,
-            email: true,
+    const updatedInterest = await prisma.$transaction(async (tx) => {
+      const result = await tx.interest.update({
+        where: { id: interest.id },
+        data: { 
+          status: "ACCEPTED",
+          // Also unlock contact for the recipient after acceptance
+          contactUnlocked: true 
+        },
+        include: {
+          fromUser: {
+            select: {
+              id: true,
+            },
+          },
+          toUser: {
+            select: {
+              id: true,
+            },
           },
         },
-        toUser: {
-          select: {
-            id: true,
-            email: true,
-          },
-        },
-      },
+      });
+
+      // Update transaction reference if wallet deduction was successful
+      if (walletResult && walletResult.transaction) {
+        await tx.walletTransaction.update({
+          where: { id: walletResult.transaction.id },
+          data: { referenceId: result.id },
+        });
+      }
+
+      return result;
     });
 
     // Create notification for sender
@@ -321,10 +439,35 @@ const acceptInterest = async (req, res, next) => {
       console.error("Notification creation error:", notifError);
     }
 
+    // Prepare response data
+    const responseData = {
+      interest: updatedInterest,
+      chatEnabled: true,  // User B can now chat after accepting
+      paymentMethod: paymentMethod
+    };
+
+    // Add wallet information if payment was made
+    if (paymentMethod === "pay_per_interest" && walletResult) {
+      const updatedWallet = await prisma.wallet.findUnique({
+        where: { userId },
+        select: { balance: true },
+      });
+      
+      responseData.wallet = {
+        balance: updatedWallet.balance,
+        deducted: INTEREST_FEE,
+        paymentMethod: "pay_per_interest"
+      };
+    }
+    // Add subscription information if subscription was used
+    else if (paymentMethod === "subscription" && subscriptionInfo) {
+      responseData.subscription = subscriptionInfo;
+    }
+
     res.json({
       status: "success",
-      message: "Interest accepted successfully. You can now chat.",
-      data: { interest: updatedInterest },
+      message: "Interest accepted successfully. Chat unlocked.",
+      data: responseData,
     });
   } catch (error) {
     next(error);
@@ -379,13 +522,11 @@ const rejectInterest = async (req, res, next) => {
         fromUser: {
           select: {
             id: true,
-            email: true,
           },
         },
         toUser: {
           select: {
             id: true,
-            email: true,
           },
         },
       },
@@ -393,8 +534,11 @@ const rejectInterest = async (req, res, next) => {
 
     res.json({
       status: "success",
-      message: "Interest rejected successfully.",
-      data: { interest: updatedInterest },
+      message: "Interest rejected successfully. Chat remains locked.",
+      data: { 
+        interest: updatedInterest,
+        chatLocked: true  // Chat remains locked for User B after rejection
+      },
     });
   } catch (error) {
     next(error);
@@ -438,7 +582,6 @@ const getMyInterests = async (req, res, next) => {
         fromUser: {
           select: {
             id: true,
-            email: true,
             photos: {
               where: { isPrimary: true },
               select: { url: true },
@@ -457,7 +600,6 @@ const getMyInterests = async (req, res, next) => {
         toUser: {
           select: {
             id: true,
-            email: true,
             photos: {
               where: { isPrimary: true },
               select: { url: true },

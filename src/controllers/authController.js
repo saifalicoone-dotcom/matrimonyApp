@@ -159,9 +159,9 @@ const completeRegistration = async (req, res, next) => {
     // Create user with phone verified
     const user = await prisma.user.create({
       data: {
-        email: email || null,
+        email: email || `${phone}@temp-email.com`,  // Provide a temporary email to satisfy non-null constraint
         phone,
-        passwordHash: null, // No password for OTP-based registration
+        passwordHash: "", // Empty string for OTP-based registration since field is required
         role: "USER",
         isEmailVerified: !!email,
         isPhoneVerified: true,
@@ -196,6 +196,7 @@ const completeRegistration = async (req, res, next) => {
       },
     });
   } catch (error) {
+
     // Handle unique constraint violations (duplicate email)
     if (error.code === "P2002") {
       const field = error.meta?.target?.[0] || "field";
