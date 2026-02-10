@@ -28,12 +28,12 @@ const initializeSocket = (httpServer) => {
 
       if (!token) {
         return next(new Error("Authentication token required"));
-      }
+      }                
 
       // Verify JWT token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);      
       const user = await prisma.user.findUnique({
-        where: { id: decoded.id },
+        where: { id: decoded.userId },
         select: { id: true, isActive: true },
       });
 
@@ -41,7 +41,7 @@ const initializeSocket = (httpServer) => {
         return next(new Error("Invalid or inactive user"));
       }
 
-      socket.userId = user.id;
+      socket.userId = user.id;      
       next();
     } catch (error) {
       next(new Error("Authentication failed"));
@@ -62,7 +62,7 @@ const initializeSocket = (httpServer) => {
     // Handle join chat room
     socket.on("join_chat", async (data) => {
       try {
-        const { targetUserId } = data;
+        const { targetUserId } = data;        
 
         if (!targetUserId) {
           socket.emit("error", { message: "Target user ID is required" });
@@ -94,7 +94,7 @@ const initializeSocket = (httpServer) => {
             fromUserId: userId,
             toUserId: targetUserId,
           },
-        });
+        });        
 
         // Check if user B (recipient) sent interest to user A (sender) and accepted it
         const incomingInterest = await prisma.interest.findFirst({
@@ -108,12 +108,12 @@ const initializeSocket = (httpServer) => {
         const user = await prisma.user.findUnique({
           where: { id: userId },
           select: { role: true },
-        });
+        });        
 
         // Chat access rules:
         // 1. User A can join chat with User B if User A sent interest (regardless of acceptance status)
         // 2. User B can join chat with User A only if User B accepted User A's interest
-        const canAccessChat = outgoingInterest || user.role !== "USER" || incomingInterest;
+        const canAccessChat = outgoingInterest || user.role !== "USER" || incomingInterest;        
 
         if (!canAccessChat) {
           socket.emit("error", {

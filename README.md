@@ -198,6 +198,20 @@ cp .env.example .env
    https://your-domain.com/api/payments/webhook
    ```
 
+## 📚 Documentation
+
+- [API Documentation](./API_DOCUMENTATION.md)
+- [Postman Collection](./Complete_Matrimonial_API_Collection.postman_collection.json)
+- [Postman Guide](./POSTMAN_README.md)
+- [Docker Setup](./DOCKER_README.md)
+- [Payment Integration](./RAZORPAY_INTEGRATION_GUIDE.md)
+- [Socket Chat Integration Guide](./SOCKET_CHAT_INTEGRATION_GUIDE.md)
+- [Socket Chat Implementation Guide (Frontend)](./SOCKET_CHAT_IMPLEMENTATION_GUIDE.md)
+- [Redis Implementation](./REDIS_IMPLEMENTATION_SUMMARY.md)
+- [OTP Authentication](./OTP_AUTH_SYSTEM.md)
+- [Production Deployment Checklist](./PRODUCTION_DEPLOYMENT_CHECKLIST.md) 🆕
+- [Production Security Guide](./PRODUCTION_SECURITY_GUIDE.md) 🆕
+
 ## Scripts
 
 - `npm start` - Start production server

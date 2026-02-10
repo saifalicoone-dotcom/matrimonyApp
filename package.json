@@ -8,14 +8,16 @@
     "dev": "nodemon server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:push": "prisma db push",
     "docker:build": "docker-compose build",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
-    "docker:db:migrate": "docker-compose exec backend npm run prisma:migrate",
-    "docker:db:studio": "docker-compose exec backend npm run prisma:studio"
+    "docker:db:migrate": "docker-compose exec backend npm run prisma:deploy",
+    "docker:db:studio": "docker-compose exec backend npm run prisma:studio",
+    "production:start": "npx prisma migrate deploy && node server.js"
   },
   "keywords": [
     "matrimonial",
