@@ -72,7 +72,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/shortlist", shortlistRoutes);
 app.use("/api/users/me/face-verification", faceVerificationRoutes);
 app.use("/api/wallet", walletRoutes);
-app.use("/api/payments", paymentRoutes);
+// app.use("/api/payments", paymentRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 
