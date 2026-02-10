@@ -44,23 +44,17 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/matrimonial_db?schema=public
-      - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-      - JWT_EXPIRES_IN=7d
-      - JWT_REFRESH_SECRET=your-refresh-token-secret
-      - JWT_REFRESH_EXPIRES_IN=30d
-      - SMS_SERVICE=console
-      - RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxx
-      - RAZORPAY_KEY_SECRET=your_razorpay_key_secret
-      - RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
-      - R2_ACCOUNT_ID=85d5534a60594e5a9b5b98b068aea109
-      - R2_ACCESS_KEY_ID=ca3b32aaa712f2e039f6a789fc5599a9
-      - R2_SECRET_ACCESS_KEY=b95db8991a04c0fb8bc6de25d492c235be7f2dc6853fffd369c25c67d35748b4
-      - R2_BUCKET_NAME=development-bucket
-      - R2_ENDPOINT=https://85d5534a60594e5a9b5b98b068aea109.r2.cloudflarestorage.com
+      NODE_ENV: testing
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?schema=public
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379      
+      JWT_SECRET: dev-jwt-secret-9f3a7c2d1b4e5f6a8c0d
+      JWT_REFRESH_SECRET: dev-refresh-secret-4a8b1c9d2e7f3a6b5c0e
+
+      # DATABASE_URL=postgresql://postgres:password@postgres:5432/matrimonial_db?schema=public
+      # REDIS_URL: redis://redis:6379 
+      # NODE_ENV: production
+    env_file:
+      - .env
     depends_on:
       postgres:
         condition: service_healthy
