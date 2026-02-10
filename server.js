@@ -34,9 +34,9 @@ const notificationRoutes = require("./src/routes/notificationRoutes");
 const shortlistRoutes = require("./src/routes/shortlistRoutes");
 const faceVerificationRoutes = require("./src/routes/faceVerificationRoutes");
 const walletRoutes = require("./src/routes/walletRoutes");
-const paymentRoutes = require("./src/routes/paymentRoutes");
+// const paymentRoutes = require("./src/routes/paymentRoutes");
 const reportRoutes = require("./src/routes/reportRoutes");
-const subscriptionRoutes = require("./src/routes/subscriptionRoutes");
+// const subscriptionRoutes = require("./src/routes/subscriptionRoutes");
 
 // Basic route
 app.get("/", (req, res) => {
