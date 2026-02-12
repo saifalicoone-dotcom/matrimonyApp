@@ -29,8 +29,8 @@ RUN useradd -m -u 1001 -g nodejs nextjs
 
 
 # Change ownership of app directory
-RUN chown -R nodejs:nodejs /app
-# USER nextjs
+RUN chown -R nextjs:nodejs /app
+USER nextjs
 
 # Expose port
 EXPOSE 3000
