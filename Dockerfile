@@ -20,6 +20,7 @@ RUN npx prisma generate
 
 # Copy application code
 COPY . .
+COPY prisma ./prisma/
 
 # Create non-root user for security
 # RUN addgroup -g 1001 -S nodejs
