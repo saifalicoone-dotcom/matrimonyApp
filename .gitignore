@@ -9,7 +9,7 @@ yarn.lock
 .env.*.local
 
 # Prisma
-prisma/migrations/
+# prisma/migrations/
 
 # Logs
 logs
