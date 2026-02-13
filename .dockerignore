@@ -27,5 +27,4 @@ Dockerfile
 uploads/
 *.sqlite
 *.sqlite3
-prisma/migrations/
 prisma/dev.db
